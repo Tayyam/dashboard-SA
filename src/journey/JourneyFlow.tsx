@@ -75,6 +75,13 @@ function topNodes(items: LayerItem[], limit = 7): LayerItem[] {
   return [...items].sort((a, b) => b.value - a.value).slice(0, limit);
 }
 
+function topDateNodesChronological(items: LayerItem[], limit = 7): LayerItem[] {
+  return [...items]
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit)
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
 function shortText(text: string, max = 13): string {
   if (text.length <= max) return text;
   return `${text.slice(0, max - 1)}…`;
@@ -140,6 +147,35 @@ export function JourneyFlow() {
   const filters = useJourneyFilters((s) => s.filters);
   const prevNodePosRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const prevEdgePathRef = useRef<Map<string, string>>(new Map());
+  const stableStageLabelsRef = useRef<Record<string, string[]>>({});
+
+  const getStableStageItems = (
+    field: StageField,
+    filterKey: NodeFilterKey,
+    items: LayerItem[],
+    limit: number,
+    isDate = false
+  ): LayerItem[] => {
+    const refKey = `${field}:${limit}`;
+    if (!stableStageLabelsRef.current[refKey]) {
+      const baseline = isDate ? topDateNodesChronological(items, limit) : topNodes(items, limit);
+      stableStageLabelsRef.current[refKey] = baseline.map((i) => i.label);
+    }
+
+    const labelOrder = stableStageLabelsRef.current[refKey];
+    const liveMap = new Map(items.map((i) => [i.label, i]));
+    const selected = filters[filterKey];
+
+    return labelOrder.map((label) => {
+      const live = liveMap.get(label);
+      if (live) return live;
+      return {
+        label,
+        value: 0,
+        isSelected: selected === null || selected === label,
+      };
+    });
+  };
 
   const stages: StageDef[] = [
     {
@@ -147,59 +183,77 @@ export function JourneyFlow() {
       field: 'arrival_date',
       filterKey: 'node_arrival_date',
       isDate: true,
-      data: topNodes(arrivalDateData, 7),
+      data: getStableStageItems('arrival_date', 'node_arrival_date', arrivalDateData, 7, true),
     },
     {
       title: 'مدينة الوصول',
       field: 'arrival_city',
       filterKey: 'node_arrival_city',
-      data: topNodes(arrivalCityData, 6),
+      data: getStableStageItems('arrival_city', 'node_arrival_city', arrivalCityData, 6),
     },
     {
       title: 'فندق الوصول',
       field: 'arrival_hotel',
       filterKey: 'node_arrival_hotel',
-      data: topNodes(arrivalHotelData, 7),
+      data: getStableStageItems('arrival_hotel', 'node_arrival_hotel', arrivalHotelData, 7),
     },
     {
       title: 'مغادرة فندق الوصول',
       field: 'arrival_hotel_checkout_date',
       filterKey: 'node_arrival_hotel_checkout_date',
       isDate: true,
-      data: topNodes(arrivalHotelCheckoutDateData, 7),
+      data: getStableStageItems(
+        'arrival_hotel_checkout_date',
+        'node_arrival_hotel_checkout_date',
+        arrivalHotelCheckoutDateData,
+        7,
+        true
+      ),
     },
     {
       title: 'مدينة المغادرة',
       field: 'departure_city',
       filterKey: 'node_departure_city',
-      data: topNodes(departureCityData, 6),
+      data: getStableStageItems('departure_city', 'node_departure_city', departureCityData, 6),
     },
     {
       title: 'وصول مدينة المغادرة',
       field: 'departure_city_arrival_date',
       filterKey: 'node_departure_city_arrival_date',
       isDate: true,
-      data: topNodes(departureCityArrivalDateData, 7),
+      data: getStableStageItems(
+        'departure_city_arrival_date',
+        'node_departure_city_arrival_date',
+        departureCityArrivalDateData,
+        7,
+        true
+      ),
     },
     {
       title: 'فندق المغادرة',
       field: 'departure_hotel',
       filterKey: 'node_departure_hotel',
-      data: topNodes(departureHotelData, 7),
+      data: getStableStageItems('departure_hotel', 'node_departure_hotel', departureHotelData, 7),
     },
     {
       title: 'مغادرة الفندق',
       field: 'departure_hotel_checkout_date',
       filterKey: 'node_departure_hotel_checkout_date',
       isDate: true,
-      data: topNodes(departureHotelCheckoutDateData, 7),
+      data: getStableStageItems(
+        'departure_hotel_checkout_date',
+        'node_departure_hotel_checkout_date',
+        departureHotelCheckoutDateData,
+        7,
+        true
+      ),
     },
     {
       title: 'تاريخ المغادرة',
       field: 'departure_date',
       filterKey: 'node_departure_date',
       isDate: true,
-      data: topNodes(departureDateData, 7),
+      data: getStableStageItems('departure_date', 'node_departure_date', departureDateData, 7, true),
     },
   ];
 
@@ -395,10 +449,13 @@ export function JourneyFlow() {
 
         <g className="journey-nodes">
           {nodes.map((n) => (
+            (() => {
+              const shouldFade = !n.isSelected || n.value === 0;
+              return (
             <g
               key={n.id}
               transform={`translate(${n.x}, ${n.y})`}
-              className={n.isSelected ? 'journey-node-g' : 'journey-node-g is-faded'}
+              className={shouldFade ? 'journey-node-g is-faded' : 'journey-node-g'}
               onClick={() => toggleNode(n.filterKey, n.label)}
               role="button"
             >
@@ -421,7 +478,9 @@ export function JourneyFlow() {
                   />
                 );
               })()}
-              {n.isActiveFiltered && <circle cx="0" cy="0" r="46" className="journey-node-active-ring" />}
+              {n.isActiveFiltered && n.value > 0 && (
+                <circle cx="0" cy="0" r="46" className="journey-node-active-ring" />
+              )}
               <circle cx="0" cy="0" r="40" className="journey-node-circle" />
               {(() => {
                 const isHotelNode = n.field === 'arrival_hotel' || n.field === 'departure_hotel';
@@ -450,6 +509,8 @@ export function JourneyFlow() {
                 {n.value}
               </text>
             </g>
+              );
+            })()
           ))}
         </g>
       </svg>

@@ -52,6 +52,7 @@ interface TreeNode {
   label: string;
   value: number;
   isSelected: boolean;
+  isActiveFiltered: boolean;
   x: number;
   y: number;
   isDate?: boolean;
@@ -136,6 +137,7 @@ export function JourneyFlow() {
   } = useJourneyData();
 
   const toggleNode = useJourneyFilters((s) => s.toggleNodeFilter);
+  const filters = useJourneyFilters((s) => s.filters);
   const prevNodePosRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const prevEdgePathRef = useRef<Map<string, string>>(new Map());
 
@@ -230,6 +232,7 @@ export function JourneyFlow() {
         label: item.label,
         value: item.value,
         isSelected: item.isSelected,
+        isActiveFiltered: filters[stage.filterKey] === item.label,
         x: stageStartX + j * colGap,
         y,
         isDate: stage.isDate,
@@ -418,6 +421,7 @@ export function JourneyFlow() {
                   />
                 );
               })()}
+              {n.isActiveFiltered && <circle cx="0" cy="0" r="46" className="journey-node-active-ring" />}
               <circle cx="0" cy="0" r="40" className="journey-node-circle" />
               {(() => {
                 const isHotelNode = n.field === 'arrival_hotel' || n.field === 'departure_hotel';

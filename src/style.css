@@ -1571,6 +1571,18 @@ html, body, #app {
   filter: drop-shadow(0 3px 7px rgba(4, 106, 56, 0.3));
 }
 
+.journey-node-active-ring {
+  fill: none;
+  stroke: #03542c;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 16 10;
+  transform-origin: center;
+  animation: journeyNodeRingSpin 1.8s linear infinite;
+  opacity: 0.95;
+  pointer-events: none;
+}
+
 .journey-node-main-text {
   font-size: 10px;
   font-weight: 700;
@@ -1588,5 +1600,14 @@ html, body, #app {
   font-weight: 700;
   fill: #ffffff;
   pointer-events: none;
+}
+
+@keyframes journeyNodeRingSpin {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -52;
+  }
 }
 

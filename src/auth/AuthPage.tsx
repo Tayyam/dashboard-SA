@@ -13,10 +13,15 @@ export default function AuthPage() {
     setIsSubmitting(true);
     setError(null);
     try {
+      // Use the actual production URL or current origin
+      const targetUrl = window.location.hostname === 'localhost' 
+        ? window.location.origin 
+        : 'https://svhajjdashborad.netlify.app';
+
       const { error: err } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: targetUrl,
         },
       });
       if (err) throw err;

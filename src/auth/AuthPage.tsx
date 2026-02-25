@@ -23,14 +23,14 @@ export default function AuthPage() {
         const { error: err, data } = await supabase.auth.signUp({
           email,
           password,
+          options: { emailRedirectTo: undefined },
         });
         if (err) throw err;
-        if (data.user && data.session) {
-           // Session created immediately
-        } else if (data.user && !data.session) {
-           setMessage('تم إنشاء الحساب! يرجى التحقق من بريدك الإلكتروني لتأكيد التسجيل.');
-           setLoading(false);
-           return;
+        if (data.user && !data.session) {
+          // Email confirmation is still enabled in Supabase - session won't start until confirmed
+          setMessage('تم إنشاء الحساب. إذا لم يفتح التطبيق تلقائياً، يرجى إيقاف تأكيد البريد الإلكتروني من إعدادات Supabase.');
+          setLoading(false);
+          return;
         }
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({

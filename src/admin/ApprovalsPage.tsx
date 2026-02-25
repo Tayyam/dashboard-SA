@@ -68,7 +68,8 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
         .eq('key', 'auto_approve')
         .maybeSingle();
       if (setting) {
-        setAutoApprove(setting.value === true);
+        const v = setting.value;
+        setAutoApprove(v === true || v === 'true' || v === 1 || v === '1');
       }
 
       const uids = Array.from(new Set((approvals ?? []).map((a) => a.user_id)));

@@ -111,8 +111,10 @@ export async function ensureUserAndApproval(user: User) {
       .select('value')
       .eq('key', 'auto_approve')
       .maybeSingle();
-    if (setting && setting.value === true) {
-      isAutoApprove = true;
+    if (setting) {
+      const v = setting.value;
+      // Handle JSONB returning as boolean, string, or number
+      isAutoApprove = v === true || v === 'true' || v === 1 || v === '1';
     }
   } catch (e) {
     console.error('Failed to fetch auto_approve setting', e);

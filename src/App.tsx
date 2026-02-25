@@ -1,6 +1,7 @@
 import { useDashboardData } from './store/useDashboardData';
 import { useFilters } from './store/useFilters';
 import { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { KPICards } from './dashboard/KPICards';
 import { SidebarFilters } from './dashboard/SidebarFilters';
 import { ChartWrapper } from './charts/ChartWrapper';
@@ -9,9 +10,16 @@ import { PieChart } from './charts/PieChart';
 import { Histogram } from './charts/Histogram';
 import { exportPilgrimsToExcel } from './core/exportExcel';
 import { JourneyPage } from './journey/JourneyPage';
+import AuthPage from './auth/AuthPage';
+import { PendingApprovalPage } from './auth/PendingApprovalPage';
+import OnboardingPage from './auth/OnboardingPage';
+import ProfilePage from './auth/ProfilePage';
+import { ApprovalsPage } from './admin/ApprovalsPage';
+import { supabase } from './core/supabaseClient';
+import { ensureUserAndApproval, type AppRole, type ApprovalStatus } from './core/authAccess';
 import type { Filters } from './core/types';
 
-type Page = 'dashboard' | 'journey';
+type Page = 'dashboard' | 'journey' | 'approvals' | 'profile';
 
 function ActiveFilterBadges() {
   const filters = useFilters((s) => s.filters);
@@ -62,13 +70,82 @@ function ActiveFilterBadges() {
 export default function App() {
   const [showIntro, setShowIntro] = useState(true);
   const [page, setPage] = useState<Page>('dashboard');
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [accessLoading, setAccessLoading] = useState(false);
+  const [role, setRole] = useState<AppRole | null>(null);
+  const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [position, setPosition] = useState<string | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) return;
+      setSession(data.session ?? null);
+      setAuthLoading(false);
+    });
+
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setAuthLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!session || (role !== 'admin' && approvalStatus !== 'approved')) return;
     const timer = window.setTimeout(() => {
       setShowIntro(false);
     }, 3000);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [session, role, approvalStatus]);
+
+  useEffect(() => {
+    if (!session) {
+      setRole(null);
+      setApprovalStatus(null);
+      setDisplayName('');
+      setAvatarUrl(null);
+      setAccessLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setAccessLoading(true);
+    ensureUserAndApproval(session.user)
+      .then(({ profile, approval, isNewUser: isNew }) => {
+        if (cancelled) return;
+        setRole(profile.role);
+        setApprovalStatus(approval.status);
+        setDisplayName(profile.name || session.user.email || 'مستخدم');
+        setAvatarUrl(profile.avatar_url || null);
+        setPosition(profile.position || null);
+        setIsNewUser(isNew);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRole('user');
+        setApprovalStatus('pending');
+        setDisplayName(session.user.email || 'مستخدم');
+        const meta = (session.user.user_metadata ?? {}) as Record<string, unknown>;
+        const fromMeta = typeof meta.avatar_url === 'string' ? meta.avatar_url : null;
+        setAvatarUrl(fromMeta);
+      })
+      .finally(() => {
+        if (!cancelled) setAccessLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
 
   const {
     filteredData,
@@ -93,6 +170,41 @@ export default function App() {
   const filters = useFilters((s) => s.filters);
 
   const hasAnyFilter = Object.values(filters).some(Boolean);
+  const userEmail = session?.user?.email ?? 'user';
+  const isAdmin = role === 'admin';
+  const isApproved = isAdmin || approvalStatus === 'approved';
+
+  if (authLoading) {
+    return (
+      <div className="auth-screen">
+        <div className="auth-card auth-loading">جاري تحميل الجلسة...</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <AuthPage />;
+  }
+
+  // New User Onboarding Flow
+  if (isNewUser && !accessLoading) {
+    return (
+      <OnboardingPage
+        userId={session.user.id}
+        initialName={displayName || userEmail}
+        initialAvatarUrl={avatarUrl}
+        onFinish={async (payload) => {
+          await saveProfile(payload);
+          setIsNewUser(false);
+          setShowIntro(true); // Show welcome intro after onboarding
+        }}
+      />
+    );
+  }
+
+  if (!isApproved && !accessLoading) {
+    return <PendingApprovalPage userName={displayName || userEmail} />;
+  }
 
   if (showIntro) {
     return (
@@ -113,6 +225,25 @@ export default function App() {
 
   const isDashboard = page === 'dashboard';
   const isJourney   = page === 'journey';
+  const isApprovals = page === 'approvals';
+
+  const saveProfile = async (payload: { name: string; avatar_url: string | null; position: string | null }) => {
+    if (!session) return;
+    const { error } = await supabase
+      .schema('publicsv')
+      .from('users')
+      .update({
+        name: payload.name,
+        avatar_url: payload.avatar_url,
+        position: payload.position,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', session.user.id);
+    if (error) throw error;
+    setDisplayName(payload.name);
+    setAvatarUrl(payload.avatar_url);
+    setPosition(payload.position);
+  };
 
   return (
     <div className="app-shell">
@@ -126,7 +257,12 @@ export default function App() {
             {isDashboard && (
               <div className="header-texts">
                 <h1 className="header-title">لوحة المعلومات التنفيذية</h1>
-                <span className="header-subtitle">تحليلات بيانات الحجاج</span>
+                <div className="header-sub-row">
+                  <span className="header-subtitle">تحليلات بيانات الحجاج</span>
+                  <span className="header-date">
+                    {new Date().toLocaleDateString('ar-SA', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
               </div>
             )}
           </div>
@@ -144,15 +280,45 @@ export default function App() {
           >
             مسار الرحلة
           </button>
+          {isAdmin && (
+            <button
+              className={`header-nav-tab${isApprovals ? ' active' : ''}`}
+              onClick={() => setPage('approvals')}
+            >
+              الموافقات
+            </button>
+          )}
         </nav>
         <div className="header-right">
-          <span className="header-date">
-            {new Date().toLocaleDateString('ar-SA', { day: '2-digit', month: 'short', year: 'numeric' })}
-          </span>
+          <button
+            type="button"
+            className="header-user-chip"
+            title="تعديل الملف الشخصي"
+            onClick={() => setPage('profile')}
+          >
+            <span className="header-user-name">{displayName || userEmail}</span>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={displayName || 'User'} className="header-user-avatar" />
+            ) : (
+              <span className="header-user-avatar fallback" aria-label="User avatar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </span>
+            )}
+          </button>
+          <button className="icon-action-btn" onClick={() => supabase.auth.signOut()} title="تسجيل الخروج" aria-label="تسجيل الخروج">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M15 7l5 5-5 5M20 12H9M12 4H6a2 2 0 00-2 2v12a2 2 0 002 2h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
           {isDashboard && (
             <>
-              <button className="export-btn" onClick={() => exportPilgrimsToExcel(filteredData)}>
-                تصدير Excel
+              <button className="icon-action-btn" onClick={() => exportPilgrimsToExcel(filteredData)} title="تصدير Excel" aria-label="تصدير Excel">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3v12M8 11l4 4 4-4M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </button>
               {hasAnyFilter && (
                 <button className="clear-all-btn" onClick={clearAll}>
@@ -164,7 +330,19 @@ export default function App() {
         </div>
       </header>
 
+      {page === 'profile' && session && (
+        <ProfilePage
+          userId={session.user.id}
+          initialName={displayName || userEmail}
+          initialAvatarUrl={avatarUrl}
+          initialPosition={position}
+          onBack={() => setPage('dashboard')}
+          onSave={saveProfile}
+        />
+      )}
+
       {isJourney && <JourneyPage />}
+      {isApprovals && isAdmin && <ApprovalsPage adminUserId={session.user.id} />}
 
       {isDashboard && <div className="main-layout">
         {/* ── Sidebar ──────────────────────────────────────────── */}

@@ -1,0 +1,68 @@
+/* ─── Reset & Base ──────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Brand */
+  --primary:        #046A38;
+  --primary-dark:   #034d28;
+  --primary-light:  #057a42;
+  --primary-pale:   #e8f5ee;
+  --primary-ultra:  #f0faf4;
+
+  /* Neutrals */
+  --white:          #ffffff;
+  --gray-50:        #f8fafc;
+  --gray-100:       #f1f5f9;
+  --gray-200:       #e2e8f0;
+  --gray-300:       #cbd5e1;
+  --gray-400:       #94a3b8;
+  --gray-500:       #64748b;
+  --gray-600:       #475569;
+  --gray-700:       #334155;
+  --gray-800:       #1e293b;
+  --gray-900:       #0f172a;
+
+  /* Semantic */
+  --bg-base:        #f1f5f9;
+  --bg-card:        #ffffff;
+  --bg-sidebar:     #046A38;
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+  --text-on-green:  #ffffff;
+  --border:         #e2e8f0;
+  --border-strong:  #cbd5e1;
+
+  /* Chart palette */
+  --chart-bar:      #046A38;
+  --chart-bar-sel:  #034d28;
+  --chart-bar-fade: #c8dfd3;
+  --chart-grid:     #e2e8f0;
+  --chart-tooltip-bg: #1e293b;
+
+  --font:    'Inter', system-ui, -apple-system, sans-serif;
+  --radius:  10px;
+  --shadow:  0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+html, body, #app {
+  height: 100%;
+  width: 100%;
+  font-family: var(--font);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar (Firefox) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-300) transparent;
+}

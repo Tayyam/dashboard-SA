@@ -78,6 +78,7 @@ export default function App() {
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [position, setPosition] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
@@ -127,6 +128,7 @@ export default function App() {
         setDisplayName(profile.name || session.user.email || 'مستخدم');
         setAvatarUrl(profile.avatar_url || null);
         setPosition(profile.position || null);
+        setPhone(profile.phone || null);
         setIsNewUser(isNew);
       })
       .catch(() => {
@@ -227,7 +229,7 @@ export default function App() {
   const isJourney   = page === 'journey';
   const isApprovals = page === 'approvals';
 
-  const saveProfile = async (payload: { name: string; avatar_url: string | null; position: string | null }) => {
+  const saveProfile = async (payload: { name: string; avatar_url: string | null; position: string | null; phone: string | null }) => {
     if (!session) return;
     const { error } = await supabase
       .schema('publicsv')
@@ -236,6 +238,7 @@ export default function App() {
         name: payload.name,
         avatar_url: payload.avatar_url,
         position: payload.position,
+        phone: payload.phone,
         updated_at: new Date().toISOString(),
       })
       .eq('id', session.user.id);
@@ -243,6 +246,7 @@ export default function App() {
     setDisplayName(payload.name);
     setAvatarUrl(payload.avatar_url);
     setPosition(payload.position);
+    setPhone(payload.phone);
   };
 
   return (
@@ -336,6 +340,7 @@ export default function App() {
           initialName={displayName || userEmail}
           initialAvatarUrl={avatarUrl}
           initialPosition={position}
+          initialPhone={phone}
           onBack={() => setPage('dashboard')}
           onSave={saveProfile}
         />

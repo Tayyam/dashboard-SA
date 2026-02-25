@@ -6,8 +6,9 @@ interface ProfilePageProps {
   initialName: string;
   initialAvatarUrl: string | null;
   initialPosition: string | null;
+  initialPhone: string | null;
   onBack: () => void;
-  onSave: (payload: { name: string; avatar_url: string | null; position: string | null }) => Promise<void>;
+  onSave: (payload: { name: string; avatar_url: string | null; position: string | null; phone: string | null }) => Promise<void>;
 }
 
 export default function ProfilePage({
@@ -15,11 +16,13 @@ export default function ProfilePage({
   initialName,
   initialAvatarUrl,
   initialPosition,
+  initialPhone,
   onBack,
   onSave,
 }: ProfilePageProps) {
   const [name, setName] = useState(initialName);
   const [position, setPosition] = useState(initialPosition || '');
+  const [phone, setPhone] = useState(initialPhone?.replace('+966', '') || '');
   const [preview, setPreview] = useState<string | null>(initialAvatarUrl);
   const [file, setFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -34,8 +37,9 @@ export default function ProfilePage({
     // Reset states if props change (though unlikely in this flow)
     setName(initialName);
     setPosition(initialPosition || '');
+    setPhone(initialPhone?.replace('+966', '') || '');
     setPreview(initialAvatarUrl);
-  }, [initialName, initialPosition, initialAvatarUrl]);
+  }, [initialName, initialPosition, initialAvatarUrl, initialPhone]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const picked = e.target.files?.[0];
@@ -100,11 +104,12 @@ export default function ProfilePage({
         if (pwdErr) throw pwdErr;
       }
 
-      // 3. Update Profile Name, Avatar, and Position
+      // 3. Update Profile Name, Avatar, Position and Phone
       await onSave({ 
         name: name.trim(), 
         avatar_url: finalAvatarUrl,
-        position: position.trim() || null
+        position: position.trim() || null,
+        phone: phone.trim() ? `+966${phone.trim()}` : null
       });
       
       setMessage('تم حفظ التعديلات بنجاح');
@@ -211,6 +216,23 @@ export default function ProfilePage({
                     onChange={(e) => setPosition(e.target.value)}
                     placeholder="مثال: مدير المشروع، محلل بيانات..."
                   />
+                </div>
+
+                <div className="form-group">
+                  <label className="field-label">رقم الجوال (اختياري)</label>
+                  <div className="phone-input-wrap">
+                    <div className="phone-prefix">
+                      <img src="https://flagcdn.com/w20/sa.png" width="20" alt="SA" />
+                      <span dir="ltr">+966</span>
+                    </div>
+                    <input
+                      className="field-input phone-field"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                      placeholder="5xxxxxxxx"
+                      dir="ltr"
+                    />
+                  </div>
                 </div>
               </div>
 

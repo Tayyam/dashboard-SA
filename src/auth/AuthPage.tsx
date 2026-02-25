@@ -2,49 +2,49 @@ import { useState } from 'react';
 import { supabase } from '../core/supabaseClient';
 import '../styles/auth.css';
 
+type AuthMode = 'login' | 'signup';
+
 export default function AuthPage() {
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
-  const handleGoogleLogin = async () => {
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      // Use the actual production URL or current origin
-      const targetUrl = window.location.hostname === 'localhost' 
-        ? window.location.origin 
-        : 'https://svhajjdashborad.netlify.app';
-
-      const { error: err } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: targetUrl,
-        },
-      });
-      if (err) throw err;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setLoading(true);
     setError(null);
+    setMessage(null);
 
     try {
-      const { error: err } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (err) throw err;
+      if (mode === 'signup') {
+        const { error: err, data } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (err) throw err;
+        if (data.user && data.session) {
+           // Session created immediately
+        } else if (data.user && !data.session) {
+           setMessage('تم إنشاء الحساب! يرجى التحقق من بريدك الإلكتروني لتأكيد التسجيل.');
+           setLoading(false);
+           return;
+        }
+      } else {
+        const { error: err } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (err) throw err;
+      }
     } catch (err) {
-      setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
-      setIsSubmitting(false);
+      let msg = err instanceof Error ? err.message : 'حدث خطأ غير متوقع';
+      if (msg.includes('Invalid login credentials')) msg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+      if (msg.includes('User already registered')) msg = 'هذا البريد الإلكتروني مسجل مسبقاً';
+      setError(msg);
+      setLoading(false);
     }
   };
 
@@ -60,82 +60,61 @@ export default function AuthPage() {
         </div>
 
         <div className="auth-form-container-simple">
-          
-          <div className="auth-header-simple">
-            <h2 className="auth-welcome-simple">تسجيل الدخول</h2>
-            <p className="auth-sub-text-simple">يرجى تسجيل الدخول للمتابعة</p>
+          {/* Tabs */}
+          <div className="auth-tabs">
+            <button
+              className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
+              onClick={() => { setMode('login'); setError(null); setMessage(null); }}
+            >
+              تسجيل دخول
+            </button>
+            <button
+              className={`auth-tab ${mode === 'signup' ? 'active' : ''}`}
+              onClick={() => { setMode('signup'); setError(null); setMessage(null); }}
+            >
+              إنشاء حساب
+            </button>
           </div>
 
-          {!isAdminMode ? (
-            <>
-              <button
-                type="button"
-                className="auth-google-btn"
-                onClick={handleGoogleLogin}
-                disabled={isSubmitting}
-              >
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" width="20" height="20" />
-                <span>المتابعة باستخدام Google</span>
-              </button>
-            </>
-          ) : (
-            <form onSubmit={handleAdminLogin} className="auth-input-group">
-              <div className="auth-input-group">
-                <label className="auth-label">البريد الإلكتروني</label>
-                <input
-                  type="email"
-                  className="auth-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  required
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="auth-input-group">
+            <div className="auth-input-group">
+              <label className="auth-label">البريد الإلكتروني</label>
+              <input
+                type="email"
+                className="auth-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                required
+              />
+            </div>
 
-              <div className="auth-input-group">
-                <label className="auth-label">كلمة المرور</label>
-                <input
-                  type="password"
-                  className="auth-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
+            <div className="auth-input-group">
+              <label className="auth-label">كلمة المرور</label>
+              <input
+                type="password"
+                className="auth-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                minLength={6}
+                required
+              />
+            </div>
 
-              <button
-                type="submit"
-                className="auth-primary-btn"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'جاري التحقق...' : 'دخول المسؤول'}
-              </button>
+            {error && <div className="auth-error-msg">{error}</div>}
+            {message && <div className="auth-success-msg">{message}</div>}
 
-              <button
-                type="button"
-                className="auth-admin-toggle-subtle"
-                onClick={() => setIsAdminMode(false)}
-                style={{ marginTop: '16px', width: '100%', textAlign: 'center' }}
-              >
-                العودة
-              </button>
-            </form>
-          )}
-
-          {error && <div className="auth-error-msg">{error}</div>}
+            <button
+              type="submit"
+              className="auth-primary-btn"
+              disabled={loading}
+            >
+              {loading ? 'جاري التنفيذ...' : (mode === 'login' ? 'دخول' : 'إنشاء حساب جديد')}
+            </button>
+          </form>
         </div>
       </div>
-
-      {!isAdminMode && (
-        <button
-          className="auth-admin-corner-btn"
-          onClick={() => setIsAdminMode(true)}
-          title="Admin Login"
-        >
-          Admin Login
-        </button>
-      )}
     </div>
   );
 }

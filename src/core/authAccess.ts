@@ -10,6 +10,7 @@ export interface UserProfileRow {
   name: string;
   avatar_url: string | null;
   position: string | null;
+  phone: string | null;
   role: AppRole;
 }
 
@@ -47,7 +48,7 @@ export async function ensureUserAndApproval(user: User) {
   // 1. Try to get existing profile
   const { data: existingProfile } = await db
     .from('users')
-    .select('id,email,name,avatar_url,position,role')
+    .select('id,email,name,avatar_url,position,phone,role')
     .eq('id', user.id)
     .maybeSingle<UserProfileRow>();
 

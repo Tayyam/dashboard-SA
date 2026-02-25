@@ -141,6 +141,24 @@
   line-height: 1.4;
 }
 
+.avatar-remove-btn {
+  margin-top: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.avatar-remove-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
 /* Fields Section */
 .profile-fields-section {
   display: flex;

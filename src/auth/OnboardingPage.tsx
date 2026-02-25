@@ -46,7 +46,7 @@ export default function OnboardingPage({
     }
 
     setIsSaving(true);
-    let finalAvatarUrl = initialAvatarUrl;
+    let finalAvatarUrl = preview === null ? null : initialAvatarUrl;
 
     try {
       if (file) {
@@ -113,7 +113,21 @@ export default function OnboardingPage({
                 </svg>
               </div>
             </button>
-            <span className="onboarding-avatar-label">اختر صورة شخصية</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+              <span className="onboarding-avatar-label">اختر صورة شخصية</span>
+              {preview && (
+                <button 
+                  type="button" 
+                  className="avatar-remove-btn"
+                  onClick={() => {
+                    setPreview(null);
+                    setFile(null);
+                  }}
+                >
+                  إزالة الصورة
+                </button>
+              )}
+            </div>
             <input
               ref={inputRef}
               type="file"

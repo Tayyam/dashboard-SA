@@ -71,7 +71,7 @@ export default function ProfilePage({
     }
 
     setIsSaving(true);
-    let finalAvatarUrl = initialAvatarUrl;
+    let finalAvatarUrl = preview === null ? null : initialAvatarUrl;
 
     try {
       // 1. Upload Avatar if changed
@@ -164,6 +164,18 @@ export default function ProfilePage({
                 <div className="avatar-hint-big">
                   <h3>صورة الملف الشخصي</h3>
                   <p>تغيير الصورة الشخصية التي تظهر في النظام</p>
+                  {preview && (
+                    <button 
+                      type="button" 
+                      className="avatar-remove-btn"
+                      onClick={() => {
+                        setPreview(null);
+                        setFile(null);
+                      }}
+                    >
+                      إزالة الصورة
+                    </button>
+                  )}
                 </div>
               </div>
               <input

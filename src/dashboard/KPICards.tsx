@@ -45,7 +45,7 @@ function RoomCard({
   );
 }
 
-export function KPICards({ totalPilgrims, makkahRooms, madinahRooms }: KPICardsProps) {
+export function KPICards({ makkahRooms, madinahRooms }: KPICardsProps) {
   return (
     <div className="kpi-row">
       <div className="kpi-card">

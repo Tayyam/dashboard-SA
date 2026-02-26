@@ -1,43 +1,22 @@
 import { useMemo } from 'react';
-import { rawData } from '../data/data';
+import { rawData } from '../data/rawData';
 import { applyFilters } from '../core/filterEngine';
 import { groupBy, aggregate, toChartData, toSortedChartData } from '../core/aggregationEngine';
 import { useFilters } from './useFilters';
 import { DIMENSIONS } from '../core/dimensions';
 
-function toRoomBreakdown(counts: Record<string, number>) {
-  const triplePilgrims = counts['triple'] ?? 0;
-  const doublePilgrims = counts['double'] ?? 0;
-  const quadPilgrims = counts['quad'] ?? 0;
-
-  return {
-    // Convert pilgrim counts to actual room counts by capacity.
-    triple: Math.ceil(triplePilgrims / 3),
-    double: Math.ceil(doublePilgrims / 2),
-    quad: Math.ceil(quadPilgrims / 4),
-  };
-}
+const ZERO_ROOMS = { triple: 0, double: 0, quad: 0 };
 
 export function useDashboardData() {
   const filters = useFilters((s) => s.filters);
 
-  // Single source of truth: all charts derive from this
   const filteredData = useMemo(() => applyFilters(rawData, filters), [filters]);
 
   // ── KPI ──────────────────────────────────────────────────────────────────
   const totalPilgrims = filteredData.length;
 
-  const makkahRooms = useMemo(() => {
-    const grouped = groupBy(filteredData, DIMENSIONS.MAKKAH_ROOM_TYPE as never);
-    const counts = aggregate(grouped, 'count');
-    return toRoomBreakdown(counts);
-  }, [filteredData]);
-
-  const madinahRooms = useMemo(() => {
-    const grouped = groupBy(filteredData, DIMENSIONS.MADINAH_ROOM_TYPE as never);
-    const counts = aggregate(grouped, 'count');
-    return toRoomBreakdown(counts);
-  }, [filteredData]);
+  const makkahRooms  = ZERO_ROOMS;
+  const madinahRooms = ZERO_ROOMS;
 
   // ── Chart Datasets ────────────────────────────────────────────────────────
   const genderData = useMemo(() => {
@@ -71,24 +50,29 @@ export function useDashboardData() {
   }, [filteredData, filters.chart_departure_hotel]);
 
   const nationalityData = useMemo(() => {
-    const agg = aggregate(groupBy(filteredData, DIMENSIONS.NATIONALITY as never), 'count');
-    return toChartData(agg, filters.chart_nationality);
-  }, [filteredData, filters.chart_nationality]);
+    const agg   = aggregate(groupBy(filteredData, DIMENSIONS.NATIONALITY as never), 'count');
+    const total = Object.values(agg).reduce((s, v) => s + v, 0);
+    const threshold = total * 0.05;
 
-  const accommodationStatusData = useMemo(() => {
-    const agg = aggregate(groupBy(filteredData, DIMENSIONS.ACCOMMODATION_STATUS as never), 'count');
-    return toChartData(agg, filters.chart_accommodation_status);
-  }, [filteredData, filters.chart_accommodation_status]);
+    const major: Record<string, number> = {};
+    let otherCount = 0;
+    for (const [key, val] of Object.entries(agg).sort((a, b) => b[1] - a[1])) {
+      if (val >= threshold) major[key] = val;
+      else otherCount += val;
+    }
+    if (otherCount > 0) major['أخرى'] = otherCount;
+
+    const selected = filters.chart_nationality;
+    const effectiveSelected =
+      selected && !(selected in major) ? 'أخرى' : selected;
+
+    return toChartData(major, effectiveSelected);
+  }, [filteredData, filters.chart_nationality]);
 
   const packageData = useMemo(() => {
     const agg = aggregate(groupBy(filteredData, DIMENSIONS.PACKAGE as never), 'count');
     return toChartData(agg, filters.chart_package);
   }, [filteredData, filters.chart_package]);
-
-  const companyData = useMemo(() => {
-    const agg = aggregate(groupBy(filteredData, DIMENSIONS.COMPANY as never), 'count');
-    return toChartData(agg, filters.chart_company);
-  }, [filteredData, filters.chart_company]);
 
   const ageData = useMemo(() => {
     const agg = aggregate(groupBy(filteredData, DIMENSIONS.AGE_BUCKET as never), 'count');
@@ -107,9 +91,7 @@ export function useDashboardData() {
     arrivalHotelData,
     departureHotelData,
     nationalityData,
-    accommodationStatusData,
     packageData,
-    companyData,
     ageData,
   };
 }

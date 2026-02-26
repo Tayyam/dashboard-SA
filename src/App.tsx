@@ -20,6 +20,12 @@ import { ensureUserAndApproval, type AppRole, type ApprovalStatus } from './core
 import type { Filters } from './core/types';
 
 type Page = 'dashboard' | 'journey' | 'approvals' | 'profile';
+type ProfilePayload = {
+  name: string;
+  avatar_url: string | null;
+  position: string | null;
+  phone: string | null;
+};
 
 function ActiveFilterBadges() {
   const filters = useFilters((s) => s.filters);
@@ -33,9 +39,7 @@ function ActiveFilterBadges() {
     'chart_arrival_hotel',
     'chart_departure_hotel',
     'chart_nationality',
-    'chart_accommodation_status',
     'chart_package',
-    'chart_company',
     'chart_age_bucket',
   ];
 
@@ -47,9 +51,7 @@ function ActiveFilterBadges() {
     chart_arrival_hotel: 'فندق الوصول',
     chart_departure_hotel: 'فندق المغادرة',
     chart_nationality: 'الجنسية',
-    chart_accommodation_status: 'حالة السكن',
     chart_package: 'الباقة',
-    chart_company: 'الشركة',
     chart_age_bucket: 'العمر',
   };
 
@@ -79,7 +81,7 @@ export default function App() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [position, setPosition] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -114,6 +116,9 @@ export default function App() {
       setApprovalStatus(null);
       setDisplayName('');
       setAvatarUrl(null);
+      setPosition(null);
+      setPhone(null);
+      setNeedsOnboarding(false);
       setAccessLoading(false);
       return;
     }
@@ -121,7 +126,7 @@ export default function App() {
     let cancelled = false;
     setAccessLoading(true);
     ensureUserAndApproval(session.user)
-      .then(({ profile, approval, isNewUser: isNew }) => {
+      .then(({ profile, approval }) => {
         if (cancelled) return;
         setRole(profile.role);
         setApprovalStatus(approval.status);
@@ -129,7 +134,8 @@ export default function App() {
         setAvatarUrl(profile.avatar_url || null);
         setPosition(profile.position || null);
         setPhone(profile.phone || null);
-        setIsNewUser(isNew);
+        const shouldOnboard = profile.role !== 'admin' && profile.profile_completed !== true;
+        setNeedsOnboarding(shouldOnboard);
       })
       .catch(() => {
         if (cancelled) return;
@@ -139,6 +145,7 @@ export default function App() {
         const meta = (session.user.user_metadata ?? {}) as Record<string, unknown>;
         const fromMeta = typeof meta.avatar_url === 'string' ? meta.avatar_url : null;
         setAvatarUrl(fromMeta);
+        setNeedsOnboarding(false);
       })
       .finally(() => {
         if (!cancelled) setAccessLoading(false);
@@ -161,9 +168,7 @@ export default function App() {
     arrivalHotelData,
     departureHotelData,
     nationalityData,
-    accommodationStatusData,
     packageData,
-    companyData,
     ageData,
   } = useDashboardData();
 
@@ -175,6 +180,26 @@ export default function App() {
   const userEmail = session?.user?.email ?? 'user';
   const isAdmin = role === 'admin';
   const isApproved = isAdmin || approvalStatus === 'approved';
+  const saveProfile = async (payload: ProfilePayload, options?: { markProfileCompleted?: boolean }) => {
+    if (!session) return;
+    const { error } = await supabase
+      .schema('publicsv')
+      .from('users')
+      .update({
+        name: payload.name,
+        avatar_url: payload.avatar_url,
+        position: payload.position,
+        phone: payload.phone,
+        ...(options?.markProfileCompleted ? { profile_completed: true } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', session.user.id);
+    if (error) throw error;
+    setDisplayName(payload.name);
+    setAvatarUrl(payload.avatar_url);
+    setPosition(payload.position);
+    setPhone(payload.phone);
+  };
 
   if (authLoading) {
     return (
@@ -189,15 +214,15 @@ export default function App() {
   }
 
   // New User Onboarding Flow
-  if (isNewUser && !accessLoading) {
+  if (needsOnboarding && !accessLoading) {
     return (
       <OnboardingPage
         userId={session.user.id}
         initialName={displayName || userEmail}
         initialAvatarUrl={avatarUrl}
         onFinish={async (payload) => {
-          await saveProfile(payload);
-          setIsNewUser(false);
+          await saveProfile(payload, { markProfileCompleted: true });
+          setNeedsOnboarding(false);
           setShowIntro(true); // Show welcome intro after onboarding
         }}
       />
@@ -228,26 +253,6 @@ export default function App() {
   const isDashboard = page === 'dashboard';
   const isJourney   = page === 'journey';
   const isApprovals = page === 'approvals';
-
-  const saveProfile = async (payload: { name: string; avatar_url: string | null; position: string | null; phone: string | null }) => {
-    if (!session) return;
-    const { error } = await supabase
-      .schema('publicsv')
-      .from('users')
-      .update({
-        name: payload.name,
-        avatar_url: payload.avatar_url,
-        position: payload.position,
-        phone: payload.phone,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', session.user.id);
-    if (error) throw error;
-    setDisplayName(payload.name);
-    setAvatarUrl(payload.avatar_url);
-    setPosition(payload.position);
-    setPhone(payload.phone);
-  };
 
   return (
     <div className="app-shell">
@@ -437,24 +442,14 @@ export default function App() {
               <ChartWrapper title="عدد الحجاج حسب الجنسية" height={250}>
                 <BarChart
                   data={nationalityData}
-                  onSegmentClick={(v) => toggleChart('chart_nationality', v)}
+                  onSegmentClick={(v) => { if (v !== 'أخرى') toggleChart('chart_nationality', v); }}
                   layout="vertical"
                   maxLabelLen={14}
                 />
               </ChartWrapper>
             </div>
 
-            {/* Row 6: Accommodation Status */}
-            <div className="chart-span-1">
-              <ChartWrapper title="عدد الحجاج حسب حالة السكن" height={250}>
-                <BarChart
-                  data={accommodationStatusData}
-                  onSegmentClick={(v) => toggleChart('chart_accommodation_status', v)}
-                />
-              </ChartWrapper>
-            </div>
-
-            {/* Row 7: Package Name */}
+            {/* Row 6: Package Name */}
             <div className="chart-span-3">
               <ChartWrapper title="عدد الحجاج حسب الباقة" height={270}>
                 <BarChart
@@ -465,20 +460,8 @@ export default function App() {
               </ChartWrapper>
             </div>
 
-            {/* Row 8: Company */}
-            <div className="chart-span-2">
-              <ChartWrapper title="عدد الحجاج حسب الشركة" height={260}>
-                <BarChart
-                  data={companyData}
-                  onSegmentClick={(v) => toggleChart('chart_company', v)}
-                  layout="vertical"
-                  maxLabelLen={16}
-                />
-              </ChartWrapper>
-            </div>
-
-            {/* Row 9: Age Histogram */}
-            <div className="chart-span-2">
+            {/* Row 7: Age Histogram */}
+            <div className="chart-span-3">
               <ChartWrapper title="التوزيع العمري" height={260}>
                 <Histogram
                   data={ageData}

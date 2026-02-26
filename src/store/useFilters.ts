@@ -8,12 +8,9 @@ const EMPTY_FILTERS: Filters = {
   month: null,
   day: null,
   arrival_city: null,
-  arrival_point: null,
   departure_city: null,
-  departure_point: null,
   package: null,
   gender: null,
-  accommodation_status: null,
   chart_gender: null,
   chart_arrival_city: null,
   chart_arrival_date: null,
@@ -21,9 +18,7 @@ const EMPTY_FILTERS: Filters = {
   chart_arrival_hotel: null,
   chart_departure_hotel: null,
   chart_nationality: null,
-  chart_accommodation_status: null,
   chart_package: null,
-  chart_company: null,
   chart_age_bucket: null,
 };
 

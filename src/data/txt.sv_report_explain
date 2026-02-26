@@ -1,0 +1,64 @@
+ملخص sv_report.json
+sv_report.json هو ملف تجميعي منظم لتقرير الحج، بدل ما يكون الجدول الخام في Excel.
+هو مقسوم إلى أقسام واضحة: إحصائيات عامة، توزيعات (جنسية/عمر/باقات)، ثم تفاصيل حركة الباقات والفنادق والتواريخ.
+الحجم الحالي للأقسام:
+summary: 9
+nationality: 19
+age_breakdown: 66
+package_breakdown: 28
+first_arrival_city: 3
+last_dep_city: 2
+arrival_dates: 6
+return_dates: 6
+arrival_hotels: 6
+last_hotels: 7
+packages_detail: 63
+Structure (الهيكل)
+
+{
+  "summary": {
+    "<arabic_metric_name>": 0
+  },
+  "nationality": [
+    { "nationality": "string", "count": 0 }
+  ],
+  "age_breakdown": [
+    { "age": 0, "count": 0 }
+  ],
+  "package_breakdown": [
+    { "package": "A01", "pilgrims": 0 }
+  ],
+  "first_arrival_city": [
+    { "city": "MED", "pilgrims": 0 }
+  ],
+  "last_dep_city": [
+    { "city": "JED", "pilgrims": 0 }
+  ],
+  "arrival_dates": [
+    { "date": "YYYY-MM-DD", "pilgrims": 0 }
+  ],
+  "return_dates": [
+    { "date": "YYYY-MM-DD", "pilgrims": 0 }
+  ],
+  "arrival_hotels": [
+    { "hotel": "string", "pilgrims": 0 }
+  ],
+  "last_hotels": [
+    { "hotel": "string", "pilgrims": 0 }
+  ],
+  "packages_detail": [
+    {
+      "dep_arr_date": "YYYY-MM-DD",
+      "dep_destination": "string",
+      "first_hotel_name": "string",
+      "first_hotel_check_in": "YYYY-MM-DD",
+      "first_hotel_check_out": "YYYY-MM-DD",
+      "ret_origin": "string",
+      "last_hotel_name": "string",
+      "last_hotel_check_in": "YYYY-MM-DD",
+      "last_hotel_check_out": "YYYY-MM-DD",
+      "ret_date": "YYYY-MM-DD",
+      "pilgrims": 0
+    }
+  ]
+}

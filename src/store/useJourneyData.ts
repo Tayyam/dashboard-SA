@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { rawData } from '../data/data';
+import { rawData } from '../data/rawData';
 import { applyJourneyFilters, type JourneyFilters } from '../core/journeyFilterEngine';
 import { groupBy, aggregate } from '../core/aggregationEngine';
 import { useJourneyFilters } from './useJourneyFilters';

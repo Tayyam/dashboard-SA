@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { rawData } from '../data/data';
+import { rawData } from '../data/rawData';
 import { useJourneyFilters } from '../store/useJourneyFilters';
 import { DateRangeSlider } from './DateRangeSlider';
 import type { JourneyFilters } from '../core/journeyFilterEngine';

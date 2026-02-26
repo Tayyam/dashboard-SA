@@ -13,10 +13,9 @@ interface PieChartProps {
   onSegmentClick: (label: string) => void;
 }
 
-// Brand-aligned palette
 const SLICE_COLORS: Record<string, string> = {
-  Male:   '#046A38',   // primary green
-  Female: '#2563eb',   // blue
+  Male:   '#046A38',
+  Female: '#2563eb',
 };
 const FALLBACK = ['#046A38', '#2563eb', '#d97706', '#7c3aed', '#dc2626'];
 
@@ -27,6 +26,48 @@ const tooltipStyle = {
   color: '#f8fafc',
   fontSize: 12,
 };
+
+const RADIAN = Math.PI / 180;
+
+interface LabelProps {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  value: number;
+  name: string;
+  percent: number;
+}
+
+function renderInnerLabel({ cx, cy, midAngle, innerRadius, outerRadius, value, name, percent }: LabelProps) {
+  // Place label at 60% between inner and outer radius
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.60;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  if (percent < 0.05) return null;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      dominantBaseline="central"
+      style={{ pointerEvents: 'none', userSelect: 'none' }}
+    >
+      <tspan x={x} dy="-0.9em" fill="white" fontSize={11} fontWeight={600}>
+        {name}
+      </tspan>
+      <tspan x={x} dy="1.3em" fill="white" fontSize={13} fontWeight={700}>
+        {value.toLocaleString()}
+      </tspan>
+      <tspan x={x} dy="1.2em" fill="rgba(255,255,255,0.85)" fontSize={11}>
+        {(percent * 100).toFixed(1)}%
+      </tspan>
+    </text>
+  );
+}
 
 export function PieChart({ data, onSegmentClick }: PieChartProps) {
   const hasFilter = data.some((d) => !d.isSelected);
@@ -41,13 +82,15 @@ export function PieChart({ data, onSegmentClick }: PieChartProps) {
           data={data}
           cx="50%"
           cy="44%"
-          innerRadius="36%"
-          outerRadius="62%"
+          innerRadius="30%"
+          outerRadius="65%"
           dataKey="value"
           nameKey="label"
-          paddingAngle={3}
+          paddingAngle={2}
           onClick={(d) => onSegmentClick(d.label)}
           cursor="pointer"
+          label={renderInnerLabel as never}
+          labelLine={false}
         >
           {data.map((entry, index) => {
             const base = SLICE_COLORS[entry.label] ?? FALLBACK[index % FALLBACK.length];
@@ -62,7 +105,10 @@ export function PieChart({ data, onSegmentClick }: PieChartProps) {
             );
           })}
         </Pie>
-        <Tooltip contentStyle={tooltipStyle} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(value: number, name: string) => [value.toLocaleString(), name]}
+        />
         <Legend
           formatter={(value) => (
             <span style={{ color: '#475569', fontSize: 12, fontWeight: 500 }}>{value}</span>

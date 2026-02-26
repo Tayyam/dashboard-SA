@@ -33,6 +33,7 @@ function ActiveFilterBadges() {
   const chartKeys: (keyof Filters)[] = [
     'chart_gender',
     'chart_arrival_city',
+    'chart_contract_type',
     'chart_arrival_date',
     'chart_departure_date',
     'chart_arrival_hotel',
@@ -45,6 +46,7 @@ function ActiveFilterBadges() {
   const labels: Record<string, string> = {
     chart_gender: 'الجنس',
     chart_arrival_city: 'مدينة الوصول',
+    chart_contract_type: 'عقد الطيران',
     chart_arrival_date: 'تاريخ الوصول',
     chart_departure_date: 'تاريخ المغادرة',
     chart_arrival_hotel: 'فندق الوصول',
@@ -159,6 +161,7 @@ export default function App() {
     totalPilgrims,
     makkahRooms,
     madinahRooms,
+    contractData,
     genderData,
     arrivalCityData,
     arrivalDateData,
@@ -380,6 +383,16 @@ export default function App() {
                 <BarChart
                   data={arrivalCityData}
                   onSegmentClick={(v) => toggleChart('chart_arrival_city', v)}
+                  layout="vertical"
+                />
+              </ChartWrapper>
+            </div>
+
+            <div className="chart-span-1">
+              <ChartWrapper title="عدد الحجاج حسب عقد الطيران" height={280}>
+                <BarChart
+                  data={contractData}
+                  onSegmentClick={(v) => toggleChart('chart_contract_type', v)}
                   layout="vertical"
                 />
               </ChartWrapper>

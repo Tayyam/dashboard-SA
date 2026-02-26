@@ -84,8 +84,9 @@ export const rawData: Pilgrim[] = (() => {
         departure_city_arrival_date:   detail.last_hotel_check_in,
         departure_hotel_checkout_date: detail.last_hotel_check_out,
         departure_date:                detail.ret_date,
-        makkah_room_type:  pickWeighted(roomWeights, roomTypes, rng),
-        madinah_room_type: pickWeighted(roomWeights, roomTypes, rng),
+        makkah_room_type:       pickWeighted(roomWeights, roomTypes, rng),
+        madinah_room_type:      pickWeighted(roomWeights, roomTypes, rng),
+        flight_contract_type:   detail.flight_contract_type === 'B2B' ? 'B2B' : 'GDS',
       });
       id++;
     }

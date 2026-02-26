@@ -20,6 +20,7 @@ const EMPTY_FILTERS: Filters = {
   chart_nationality: null,
   chart_package: null,
   chart_age_bucket: null,
+  chart_contract_type: null,
 };
 
 interface FilterStore {

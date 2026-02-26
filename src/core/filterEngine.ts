@@ -26,6 +26,7 @@ export function applyFilters(data: Pilgrim[], filters: Filters): Pilgrim[] {
       const bucket = getAgeBucket(p.age);
       if (bucket !== filters.chart_age_bucket) return false;
     }
+    if (filters.chart_contract_type && p.flight_contract_type !== filters.chart_contract_type) return false;
 
     return true;
   });

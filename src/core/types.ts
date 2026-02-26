@@ -16,6 +16,7 @@ export interface Pilgrim {
   departure_date: string;                // YYYY-MM-DD
   makkah_room_type: 'triple' | 'double' | 'quad';
   madinah_room_type: 'triple' | 'double' | 'quad';
+  flight_contract_type: 'B2B' | 'GDS';
 }
 
 export interface Filters {
@@ -38,6 +39,7 @@ export interface Filters {
   chart_nationality: string | null;
   chart_package: string | null;
   chart_age_bucket: string | null;
+  chart_contract_type: string | null;
 }
 
 export type GroupedData = Record<string, Pilgrim[]>;

@@ -18,6 +18,11 @@ export function useDashboardData() {
   const makkahRooms  = ZERO_ROOMS;
   const madinahRooms = ZERO_ROOMS;
 
+  const contractData = useMemo(() => {
+    const agg = aggregate(groupBy(filteredData, DIMENSIONS.FLIGHT_CONTRACT_TYPE as never), 'count');
+    return toChartData(agg, filters.chart_contract_type);
+  }, [filteredData, filters.chart_contract_type]);
+
   // ── Chart Datasets ────────────────────────────────────────────────────────
   const genderData = useMemo(() => {
     const agg = aggregate(groupBy(filteredData, DIMENSIONS.GENDER as never), 'count');
@@ -84,6 +89,7 @@ export function useDashboardData() {
     totalPilgrims,
     makkahRooms,
     madinahRooms,
+    contractData,
     genderData,
     arrivalCityData,
     arrivalDateData,

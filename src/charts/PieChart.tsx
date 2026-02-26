@@ -107,7 +107,11 @@ export function PieChart({ data, onSegmentClick }: PieChartProps) {
         </Pie>
         <Tooltip
           contentStyle={tooltipStyle}
-          formatter={(value: number, name: string) => [value.toLocaleString(), name]}
+          formatter={(value, name) => {
+            const formattedValue =
+              typeof value === 'number' ? value.toLocaleString() : String(value ?? '');
+            return [formattedValue, name];
+          }}
         />
         <Legend
           formatter={(value) => (

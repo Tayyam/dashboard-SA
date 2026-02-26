@@ -13,7 +13,7 @@ export function useDashboardData() {
   const filteredData = useMemo(() => applyFilters(rawData, filters), [filters]);
 
   // ── KPI ──────────────────────────────────────────────────────────────────
-  const totalPilgrims = filteredData.length;
+  const totalPilgrims = 4020;
 
   const makkahRooms  = ZERO_ROOMS;
   const madinahRooms = ZERO_ROOMS;

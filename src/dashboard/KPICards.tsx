@@ -10,7 +10,7 @@ interface KPICardsProps {
   madinahRooms: RoomBreakdown;
 }
 
-const TOTAL_PILGRIMS_CAPACITY = 4020;
+const TOTAL_PILGRIMS_CAPACITY = 4200;
 
 function RoomCard({
   city,

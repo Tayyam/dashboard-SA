@@ -8,7 +8,6 @@ import { ChartWrapper } from './charts/ChartWrapper';
 import { BarChart } from './charts/BarChart';
 import { PieChart } from './charts/PieChart';
 import { Histogram } from './charts/Histogram';
-import { exportPilgrimsToExcel } from './core/exportExcel';
 import { JourneyPage } from './journey/JourneyPage';
 import AuthPage from './auth/AuthPage';
 import { PendingApprovalPage } from './auth/PendingApprovalPage';
@@ -157,7 +156,6 @@ export default function App() {
   }, [session]);
 
   const {
-    filteredData,
     totalPilgrims,
     makkahRooms,
     madinahRooms,
@@ -324,11 +322,6 @@ export default function App() {
           </button>
           {isDashboard && (
             <>
-              <button className="icon-action-btn" onClick={() => exportPilgrimsToExcel(filteredData)} title="تصدير Excel" aria-label="تصدير Excel">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 3v12M8 11l4 4 4-4M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
               {hasAnyFilter && (
                 <button className="clear-all-btn" onClick={clearAll}>
                   مسح جميع الفلاتر

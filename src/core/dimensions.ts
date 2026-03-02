@@ -8,6 +8,7 @@ export const DIMENSIONS = {
   NATIONALITY: 'nationality',
   PACKAGE: 'package',
   AGE_BUCKET: 'age_bucket',
+  VISA_STATUS: 'visa_status',
   MAKKAH_ROOM_TYPE: 'makkah_room_type',
   MADINAH_ROOM_TYPE: 'madinah_room_type',
   FLIGHT_CONTRACT_TYPE: 'flight_contract_type',

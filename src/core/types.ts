@@ -13,12 +13,16 @@ export interface Pilgrim {
   arrival_city: string;
   departure_city: string;
   arrival_hotel: string;
+  arrival_hotel_location: string;
   departure_hotel: string;
+  departure_hotel_location: string;
   arrival_date: string;                  // YYYY-MM-DD
   arrival_hotel_checkout_date: string;   // YYYY-MM-DD
   departure_city_arrival_date: string;   // YYYY-MM-DD
   departure_hotel_checkout_date: string; // YYYY-MM-DD
   departure_date: string;                // YYYY-MM-DD
+  visa_status: string;
+  inside_kingdom: boolean;
   makkah_room_type: 'triple' | 'double' | 'quad';
   madinah_room_type: 'triple' | 'double' | 'quad';
   flight_contract_type: 'B2B' | 'GDS';
@@ -45,6 +49,7 @@ export interface Filters {
   chart_package: string | null;
   chart_age_bucket: string | null;
   chart_contract_type: string | null;
+  chart_visa_status: string | null;
 }
 
 export type GroupedData = Record<string, Pilgrim[]>;

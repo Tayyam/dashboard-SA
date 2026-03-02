@@ -14,6 +14,9 @@ export interface JourneyFilters {
   dropdown_gender: string | null;
   dropdown_nationality: string | null;
   dropdown_booking_id: string | null;
+  // Journey table controls (must affect both table and chart)
+  table_search: string | null;
+  table_inside_kingdom: 'inside' | 'outside' | null;
   // Node cross-filters (click)
   node_package: string | null;
   node_arrival_date: string | null;
@@ -39,6 +42,8 @@ export const EMPTY_JOURNEY_FILTERS: JourneyFilters = {
   dropdown_gender: null,
   dropdown_nationality: null,
   dropdown_booking_id: null,
+  table_search: null,
+  table_inside_kingdom: null,
   node_package: null,
   node_arrival_date: null,
   node_arrival_city: null,
@@ -65,6 +70,20 @@ export function applyJourneyFilters(data: Pilgrim[], f: JourneyFilters): Pilgrim
     if (f.dropdown_gender          && p.gender          !== f.dropdown_gender)          return false;
     if (f.dropdown_nationality     && p.nationality     !== f.dropdown_nationality)     return false;
     if (f.dropdown_booking_id      && p.booking_id      !== f.dropdown_booking_id)      return false;
+    if (f.table_inside_kingdom === 'inside' && !p.inside_kingdom) return false;
+    if (f.table_inside_kingdom === 'outside' && p.inside_kingdom) return false;
+    if (f.table_search) {
+      const q = f.table_search.trim().toLowerCase();
+      if (q) {
+        const searchMatch =
+          p.name.toLowerCase().includes(q) ||
+          p.nationality.toLowerCase().includes(q) ||
+          p.package.toLowerCase().includes(q) ||
+          p.guide_name.toLowerCase().includes(q) ||
+          p.booking_id.toLowerCase().includes(q);
+        if (!searchMatch) return false;
+      }
+    }
 
     if (f.node_package && p.package !== f.node_package) return false;
     if (f.node_arrival_date  && p.arrival_date  !== f.node_arrival_date)  return false;

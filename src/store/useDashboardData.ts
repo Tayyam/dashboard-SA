@@ -23,6 +23,11 @@ export function useDashboardData() {
     return toChartData(agg, filters.chart_contract_type);
   }, [filteredData, filters.chart_contract_type]);
 
+  const visaStatusData = useMemo(() => {
+    const agg = aggregate(groupBy(filteredData, DIMENSIONS.VISA_STATUS as never), 'count');
+    return toChartData(agg, filters.chart_visa_status);
+  }, [filteredData, filters.chart_visa_status]);
+
   // ── Chart Datasets ────────────────────────────────────────────────────────
   const genderData = useMemo(() => {
     const agg = aggregate(groupBy(filteredData, DIMENSIONS.GENDER as never), 'count');
@@ -90,6 +95,7 @@ export function useDashboardData() {
     makkahRooms,
     madinahRooms,
     contractData,
+    visaStatusData,
     genderData,
     arrivalCityData,
     arrivalDateData,

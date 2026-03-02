@@ -44,7 +44,12 @@ function ActiveBadges() {
 export function JourneyPage() {
   const filters     = useJourneyFilters((s) => s.filters);
   const clearAll    = useJourneyFilters((s) => s.clearAll);
-  const hasAnyFilter = Object.values(filters).some(Boolean);
+  const setSidebarFilter = useJourneyFilters((s) => s.setSidebarFilter);
+  const hasAnyFilter = Object.entries(filters).some(([key, value]) => {
+    // "all" state for journey table should not count as active
+    if (key === 'table_inside_kingdom') return value !== null;
+    return Boolean(value);
+  });
   const { filteredData } = useJourneyData();
 
   return (
@@ -77,7 +82,15 @@ export function JourneyPage() {
             <JourneyFlow />
           </div>
           <div className="journey-table-block">
-            <PilgrimsTable data={filteredData} />
+            <PilgrimsTable
+              data={filteredData}
+              searchValue={filters.table_search ?? ''}
+              insideFilterValue={filters.table_inside_kingdom ?? 'all'}
+              onSearchChange={(value) => setSidebarFilter('table_search', value.trim() ? value : null)}
+              onInsideFilterChange={(value) =>
+                setSidebarFilter('table_inside_kingdom', value === 'all' ? null : value)
+              }
+            />
           </div>
         </main>
       </div>

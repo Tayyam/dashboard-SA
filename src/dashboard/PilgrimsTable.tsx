@@ -3,6 +3,10 @@ import type { Pilgrim } from '../core/types';
 
 interface PilgrimsTableProps {
   data: Pilgrim[];
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  insideFilterValue?: 'all' | 'inside' | 'outside';
+  onInsideFilterChange?: (value: 'all' | 'inside' | 'outside') => void;
 }
 
 const PAGE_SIZE = 15;
@@ -12,28 +16,52 @@ const GENDER_LABEL: Record<string, string> = {
   Female: 'أنثى',
 };
 
-export function PilgrimsTable({ data }: PilgrimsTableProps) {
+export function PilgrimsTable({
+  data,
+  searchValue,
+  onSearchChange,
+  insideFilterValue,
+  onInsideFilterChange,
+}: PilgrimsTableProps) {
   const [page, setPage]     = useState(1);
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
+  const [localInsideFilter, setLocalInsideFilter] = useState<'all' | 'inside' | 'outside'>('all');
+  const search = searchValue ?? localSearch;
+  const insideFilter = insideFilterValue ?? localInsideFilter;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return data;
-    return data.filter((p) =>
-      p.name.toLowerCase().includes(q) ||
-      p.nationality.toLowerCase().includes(q) ||
-      p.package.toLowerCase().includes(q) ||
-      p.guide_name.toLowerCase().includes(q) ||
-      p.booking_id.toLowerCase().includes(q),
-    );
-  }, [data, search]);
+    return data.filter((p) => {
+      const insideMatch =
+        insideFilter === 'all' ||
+        (insideFilter === 'inside' ? p.inside_kingdom : !p.inside_kingdom);
+
+      if (!insideMatch) return false;
+      if (!q) return true;
+
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.nationality.toLowerCase().includes(q) ||
+        p.package.toLowerCase().includes(q) ||
+        p.guide_name.toLowerCase().includes(q) ||
+        p.booking_id.toLowerCase().includes(q)
+      );
+    });
+  }, [data, search, insideFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage   = Math.min(page, totalPages);
   const slice      = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleSearch = (v: string) => {
-    setSearch(v);
+    if (onSearchChange) onSearchChange(v);
+    else setLocalSearch(v);
+    setPage(1);
+  };
+
+  const handleInsideFilter = (value: 'all' | 'inside' | 'outside') => {
+    if (onInsideFilterChange) onInsideFilterChange(value);
+    else setLocalInsideFilter(value);
     setPage(1);
   };
 
@@ -44,6 +72,17 @@ export function PilgrimsTable({ data }: PilgrimsTableProps) {
         <h3 className="pilgrims-table-title">جدول الحجاج</h3>
         <div className="pilgrims-table-meta">
           <span className="pilgrims-table-count">{filtered.length.toLocaleString()} حاج</span>
+          <select
+            className="pilgrims-table-search"
+            value={insideFilter}
+            onChange={(e) => {
+              handleInsideFilter(e.target.value as 'all' | 'inside' | 'outside');
+            }}
+          >
+            <option value="all">كل الحالات</option>
+            <option value="inside">داخل المملكة</option>
+            <option value="outside">خارج المملكة</option>
+          </select>
           <input
             className="pilgrims-table-search"
             type="text"
@@ -67,7 +106,7 @@ export function PilgrimsTable({ data }: PilgrimsTableProps) {
               <th>المرشد</th>
               <th>بلد الإقامة</th>
               <th>الجنسية</th>
-              <th>رقم الباقة</th>
+              <th>داخل المملكة</th>
               <th>اسم الباقة</th>
             </tr>
           </thead>
@@ -91,7 +130,7 @@ export function PilgrimsTable({ data }: PilgrimsTableProps) {
                   <td>{p.guide_name || '—'}</td>
                   <td>{p.residence_country || '—'}</td>
                   <td>{p.nationality || '—'}</td>
-                  <td>{p.package_id || '—'}</td>
+                  <td>{p.inside_kingdom ? 'نعم' : 'لا'}</td>
                   <td>{p.package || '—'}</td>
                 </tr>
               ))

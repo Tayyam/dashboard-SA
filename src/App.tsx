@@ -35,6 +35,7 @@ function ActiveFilterBadges() {
     'chart_gender',
     'chart_arrival_city',
     'chart_contract_type',
+    'chart_visa_status',
     'chart_arrival_date',
     'chart_departure_date',
     'chart_arrival_hotel',
@@ -48,6 +49,7 @@ function ActiveFilterBadges() {
     chart_gender: 'الجنس',
     chart_arrival_city: 'مدينة الوصول',
     chart_contract_type: 'عقد الطيران',
+    chart_visa_status: 'حالة التأشيرة',
     chart_arrival_date: 'تاريخ الوصول',
     chart_departure_date: 'تاريخ المغادرة',
     chart_arrival_hotel: 'فندق الوصول',
@@ -164,6 +166,7 @@ export default function App() {
     makkahRooms,
     madinahRooms,
     contractData,
+    visaStatusData,
     genderData,
     arrivalCityData,
     arrivalDateData,
@@ -404,8 +407,8 @@ export default function App() {
               <PilgrimsTable data={filteredData} />
             </div>
 
-            {/* Row 2: Arrival Date */}
-            <div className="chart-span-3">
+            {/* Row 2: Arrival Date + Departure Date */}
+            <div className="chart-span-2">
               <ChartWrapper title="عدد الحجاج حسب تاريخ الوصول" height={240}>
                 <BarChart
                   data={arrivalDateData}
@@ -415,8 +418,7 @@ export default function App() {
               </ChartWrapper>
             </div>
 
-            {/* Row 3: Departure Date */}
-            <div className="chart-span-3">
+            <div className="chart-span-2">
               <ChartWrapper title="عدد الحجاج حسب تاريخ المغادرة" height={240}>
                 <BarChart
                   data={departureDateData}
@@ -461,7 +463,18 @@ export default function App() {
               </ChartWrapper>
             </div>
 
-            {/* Row 6: Package Name */}
+            {/* Row 6: Visa Status (under nationality) */}
+            <div className="chart-span-3">
+              <ChartWrapper title="حالة الحجاج حسب التأشيرة" height={260}>
+                <BarChart
+                  data={visaStatusData}
+                  onSegmentClick={(v) => toggleChart('chart_visa_status', v)}
+                  layout="vertical"
+                />
+              </ChartWrapper>
+            </div>
+
+            {/* Row 7: Package Name */}
             <div className="chart-span-3">
               <ChartWrapper title="عدد الحجاج حسب الباقة" height={270}>
                 <BarChart
@@ -472,7 +485,7 @@ export default function App() {
               </ChartWrapper>
             </div>
 
-            {/* Row 7: Age Histogram */}
+            {/* Row 8: Age Histogram */}
             <div className="chart-span-3">
               <ChartWrapper title="التوزيع العمري" height={260}>
                 <Histogram

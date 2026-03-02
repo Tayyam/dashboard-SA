@@ -38,6 +38,8 @@ export interface Filters {
   departure_city: string | null;
   package: string | null;
   gender: string | null;
+  table_search: string | null;
+  table_inside_kingdom: 'inside' | 'outside' | null;
   // Chart cross-filter selections
   chart_gender: string | null;
   chart_arrival_city: string | null;

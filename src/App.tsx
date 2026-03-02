@@ -33,6 +33,7 @@ function ActiveFilterBadges() {
   const toggle = useFilters((s) => s.toggleChartFilter);
 
   const chartKeys: (keyof Filters)[] = [
+    'table_inside_kingdom',
     'chart_gender',
     'chart_arrival_city',
     'chart_contract_type',
@@ -47,6 +48,7 @@ function ActiveFilterBadges() {
   ];
 
   const labels: Record<string, string> = {
+    table_inside_kingdom: 'حالة التواجد',
     chart_gender: 'الجنس',
     chart_arrival_city: 'مدينة الوصول',
     chart_contract_type: 'عقد الطيران',
@@ -180,6 +182,7 @@ export default function App() {
   } = useDashboardData();
 
   const toggleChart = useFilters((s) => s.toggleChartFilter);
+  const setSidebarFilter = useFilters((s) => s.setSidebarFilter);
   const clearAll = useFilters((s) => s.clearAllFilters);
   const filters = useFilters((s) => s.filters);
 
@@ -412,7 +415,15 @@ export default function App() {
             </div>
 
             <div className="chart-span-3">
-              <PilgrimsTable data={filteredData} />
+              <PilgrimsTable
+                data={filteredData}
+                searchValue={filters.table_search ?? ''}
+                insideFilterValue={filters.table_inside_kingdom ?? 'all'}
+                onSearchChange={(value) => setSidebarFilter('table_search', value.trim() ? value : null)}
+                onInsideFilterChange={(value) =>
+                  setSidebarFilter('table_inside_kingdom', value === 'all' ? null : value)
+                }
+              />
             </div>
 
             {/* Row 2: Arrival Date + Departure Date */}

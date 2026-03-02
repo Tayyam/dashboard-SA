@@ -12,6 +12,20 @@ export function applyFilters(data: Pilgrim[], filters: Filters): Pilgrim[] {
     if (filters.departure_city && p.departure_city !== filters.departure_city) return false;
     if (filters.package && p.package !== filters.package) return false;
     if (filters.gender && p.gender !== filters.gender) return false;
+    if (filters.table_inside_kingdom === 'inside' && !p.inside_kingdom) return false;
+    if (filters.table_inside_kingdom === 'outside' && p.inside_kingdom) return false;
+    if (filters.table_search) {
+      const q = filters.table_search.trim().toLowerCase();
+      if (q) {
+        const searchMatch =
+          p.name.toLowerCase().includes(q) ||
+          p.nationality.toLowerCase().includes(q) ||
+          p.package.toLowerCase().includes(q) ||
+          p.guide_name.toLowerCase().includes(q) ||
+          p.booking_id.toLowerCase().includes(q);
+        if (!searchMatch) return false;
+      }
+    }
 
     // Chart cross-filters (AND logic)
     if (filters.chart_gender && p.gender !== filters.chart_gender) return false;

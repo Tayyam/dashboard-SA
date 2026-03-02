@@ -11,6 +11,8 @@ const EMPTY_FILTERS: Filters = {
   departure_city: null,
   package: null,
   gender: null,
+  table_search: null,
+  table_inside_kingdom: null,
   chart_gender: null,
   chart_arrival_city: null,
   chart_arrival_date: null,

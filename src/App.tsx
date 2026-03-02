@@ -3,6 +3,7 @@ import { useFilters } from './store/useFilters';
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { KPICards } from './dashboard/KPICards';
+import { PilgrimsTable } from './dashboard/PilgrimsTable';
 import { SidebarFilters } from './dashboard/SidebarFilters';
 import { ChartWrapper } from './charts/ChartWrapper';
 import { BarChart } from './charts/BarChart';
@@ -158,6 +159,7 @@ export default function App() {
   }, [session]);
 
   const {
+    filteredData,
     totalPilgrims,
     makkahRooms,
     madinahRooms,
@@ -398,6 +400,10 @@ export default function App() {
               </ChartWrapper>
             </div>
 
+            <div className="chart-span-3">
+              <PilgrimsTable data={filteredData} />
+            </div>
+
             {/* Row 2: Arrival Date */}
             <div className="chart-span-3">
               <ChartWrapper title="عدد الحجاج حسب تاريخ الوصول" height={240}>
@@ -475,6 +481,7 @@ export default function App() {
                 />
               </ChartWrapper>
             </div>
+
           </div>
         </main>
       </div>}

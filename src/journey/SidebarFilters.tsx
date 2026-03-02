@@ -5,7 +5,14 @@ import { DateRangeSlider } from './DateRangeSlider';
 import type { JourneyFilters } from '../core/journeyFilterEngine';
 
 function unique(arr: string[]) {
-  return Array.from(new Set(arr)).sort();
+  const invalid = new Set(['', 'null', 'undefined', 'nan']);
+  return Array.from(
+    new Set(
+      arr
+        .map((v) => (v ?? '').toString().trim())
+        .filter((v) => !invalid.has(v.toLowerCase())),
+    ),
+  ).sort();
 }
 
 function SelectFilter({

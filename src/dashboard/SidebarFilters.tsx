@@ -4,7 +4,14 @@ import { useMemo } from 'react';
 import type { Filters } from '../core/types';
 
 function unique(arr: string[]): string[] {
-  return Array.from(new Set(arr)).sort();
+  const invalid = new Set(['', 'null', 'undefined', 'nan']);
+  return Array.from(
+    new Set(
+      arr
+        .map((v) => (v ?? '').toString().trim())
+        .filter((v) => !invalid.has(v.toLowerCase())),
+    ),
+  ).sort();
 }
 
 function SelectFilter({

@@ -10,7 +10,7 @@ interface KPICardsProps {
   madinahRooms: RoomBreakdown;
 }
 
-const TOTAL_PILGRIMS_CAPACITY = 4200;
+const TOTAL_PILGRIMS_CAPACITY = 4020;
 
 function RoomCard({
   city,
@@ -45,7 +45,7 @@ function RoomCard({
   );
 }
 
-export function KPICards({ makkahRooms, madinahRooms }: KPICardsProps) {
+export function KPICards({ totalPilgrims ,makkahRooms, madinahRooms }: KPICardsProps) {
   return (
     <div className="kpi-row">
       <div className="kpi-card">
@@ -54,8 +54,8 @@ export function KPICards({ makkahRooms, madinahRooms }: KPICardsProps) {
           <span className="kpi-label">إجمالي الحجاج</span>
         </div>
         <div className="kpi-value">
-          {TOTAL_PILGRIMS_CAPACITY.toLocaleString()}
-          {/* {totalPilgrims.toLocaleString()}/{TOTAL_PILGRIMS_CAPACITY.toLocaleString()} */}
+          {/* {TOTAL_PILGRIMS_CAPACITY.toLocaleString()} */}
+          {totalPilgrims.toLocaleString()}/{TOTAL_PILGRIMS_CAPACITY.toLocaleString()}
 
         </div>
       </div>

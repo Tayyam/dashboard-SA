@@ -1,9 +1,12 @@
 import { useJourneyFilters } from '../store/useJourneyFilters';
 import { JourneySidebarFilters } from './SidebarFilters';
 import { JourneyFlow } from './JourneyFlow';
+import { PilgrimsTable } from '../dashboard/PilgrimsTable';
+import { useJourneyData } from '../store/useJourneyData';
 import type { JourneyFilters } from '../core/journeyFilterEngine';
 
 const NODE_LABELS: Partial<Record<keyof JourneyFilters, string>> = {
+  node_package: 'الباقة',
   node_arrival_date:  'تاريخ الوصول',
   node_arrival_city:  'مدينة الوصول',
   node_arrival_hotel: 'فندق الوصول',
@@ -42,6 +45,7 @@ export function JourneyPage() {
   const filters     = useJourneyFilters((s) => s.filters);
   const clearAll    = useJourneyFilters((s) => s.clearAll);
   const hasAnyFilter = Object.values(filters).some(Boolean);
+  const { filteredData } = useJourneyData();
 
   return (
     <div className="journey-page-wrap">
@@ -69,7 +73,12 @@ export function JourneyPage() {
 
         <main className="content-area">
           <ActiveBadges />
-          <JourneyFlow />
+          <div className="journey-flow-block">
+            <JourneyFlow />
+          </div>
+          <div className="journey-table-block">
+            <PilgrimsTable data={filteredData} />
+          </div>
         </main>
       </div>
     </div>

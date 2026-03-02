@@ -15,6 +15,7 @@ export interface JourneyFilters {
   dropdown_nationality: string | null;
   dropdown_booking_id: string | null;
   // Node cross-filters (click)
+  node_package: string | null;
   node_arrival_date: string | null;
   node_arrival_city: string | null;
   node_arrival_hotel: string | null;
@@ -38,6 +39,7 @@ export const EMPTY_JOURNEY_FILTERS: JourneyFilters = {
   dropdown_gender: null,
   dropdown_nationality: null,
   dropdown_booking_id: null,
+  node_package: null,
   node_arrival_date: null,
   node_arrival_city: null,
   node_arrival_hotel: null,
@@ -64,6 +66,7 @@ export function applyJourneyFilters(data: Pilgrim[], f: JourneyFilters): Pilgrim
     if (f.dropdown_nationality     && p.nationality     !== f.dropdown_nationality)     return false;
     if (f.dropdown_booking_id      && p.booking_id      !== f.dropdown_booking_id)      return false;
 
+    if (f.node_package && p.package !== f.node_package) return false;
     if (f.node_arrival_date  && p.arrival_date  !== f.node_arrival_date)  return false;
     if (f.node_arrival_city  && p.arrival_city  !== f.node_arrival_city)  return false;
     if (f.node_arrival_hotel && p.arrival_hotel !== f.node_arrival_hotel) return false;

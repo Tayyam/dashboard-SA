@@ -15,6 +15,7 @@ function fmtDateDdMm(d: string) {
 }
 
 type StageField =
+  | 'package'
   | 'arrival_date'
   | 'arrival_city'
   | 'arrival_hotel'
@@ -26,6 +27,7 @@ type StageField =
   | 'departure_date';
 
 type NodeFilterKey =
+  | 'node_package'
   | 'node_arrival_date'
   | 'node_arrival_city'
   | 'node_arrival_hotel'
@@ -132,6 +134,7 @@ export function JourneyFlow() {
   const {
     filteredData,
     totalPilgrims,
+    packageData,
     arrivalDateData,
     arrivalCityData,
     arrivalHotelData,
@@ -178,6 +181,12 @@ export function JourneyFlow() {
   };
 
   const stages: StageDef[] = [
+    {
+      title: 'الباقة',
+      field: 'package',
+      filterKey: 'node_package',
+      data: getStableStageItems('package', 'node_package', packageData, 7),
+    },
     {
       title: 'تاريخ الوصول',
       field: 'arrival_date',
@@ -392,7 +401,11 @@ export function JourneyFlow() {
 
   return (
     <div className="journey-tree-wrap">
-      <svg className="journey-tree-svg" width={svgWidth} height={svgHeight}>
+      <svg
+        className="journey-tree-svg"
+        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+        preserveAspectRatio="xMidYMid meet"
+      >
         <g transform={`translate(20, ${rootY - 16})`}>
           <rect x="0" y="0" width="126" height="32" rx="9" className="journey-stage-side-pill" />
           <text x="63" y="20" textAnchor="middle" className="journey-stage-side-pill-text">

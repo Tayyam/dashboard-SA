@@ -257,6 +257,185 @@
 .chart-span-2 { grid-column: span 2; }
 .chart-span-3 { grid-column: span 4; }
 
+/* ─── Pilgrims Table ─────────────────────────────────────────────────────── */
+.pilgrims-table-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.pilgrims-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--gray-100);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pilgrims-table-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  margin: 0;
+}
+
+.pilgrims-table-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pilgrims-table-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pilgrims-table-search {
+  font-size: 12px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  outline: none;
+  width: 200px;
+  transition: border-color 0.15s;
+  direction: rtl;
+}
+
+.pilgrims-table-search:focus {
+  border-color: var(--primary);
+}
+
+.pilgrims-table-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 380px;
+}
+
+.pilgrims-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  direction: rtl;
+}
+
+.pilgrims-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.pilgrims-table th {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 11px;
+  text-align: right;
+  padding: 9px 12px;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.pilgrims-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.pilgrims-table tbody tr:hover td {
+  background: rgba(4, 106, 56, 0.04);
+}
+
+.pilgrims-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.pilgrims-table-num {
+  color: var(--text-secondary);
+  font-size: 11px;
+  width: 40px;
+}
+
+.pilgrims-table-name {
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.pilgrims-table-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 32px !important;
+  font-size: 13px;
+}
+
+.gender-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.gender-badge.gender-male {
+  background: rgba(4, 106, 56, 0.12);
+  color: #046A38;
+}
+
+.gender-badge.gender-female {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+
+.pilgrims-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.pt-btn {
+  font-size: 12px;
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pt-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.pt-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pt-pages {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 60px;
+  text-align: center;
+}
+
 /* ─── Chart Card ──────────────────────────────────────────────────────────── */
 .chart-card {
   background: var(--bg-card);

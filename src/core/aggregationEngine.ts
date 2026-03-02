@@ -3,12 +3,22 @@ import { getAgeBucket } from './filterEngine';
 
 type Dimension = keyof Pilgrim | 'age_bucket';
 
+// Labels that represent missing / invalid data and should never appear in charts
+const BLANK_LABELS = new Set(['', 'undefined', 'null', 'NaN', 'Unknown', 'N/A']);
+
+function isBlankLabel(label: string): boolean {
+  return BLANK_LABELS.has(label.trim());
+}
+
 export function groupBy(data: Pilgrim[], dimension: Dimension): GroupedData {
   return data.reduce<GroupedData>((acc, pilgrim) => {
     const key =
       dimension === 'age_bucket'
         ? getAgeBucket(pilgrim.age)
-        : String(pilgrim[dimension as keyof Pilgrim]);
+        : String(pilgrim[dimension as keyof Pilgrim] ?? '');
+
+    if (isBlankLabel(key)) return acc; // skip blank keys
+
     if (!acc[key]) acc[key] = [];
     acc[key].push(pilgrim);
     return acc;
@@ -38,11 +48,13 @@ export function toChartData(
   selectedValue: string | null,
   sortDesc = true
 ): ChartDataPoint[] {
-  const points: ChartDataPoint[] = Object.entries(aggregated).map(([label, value]) => ({
-    label,
-    value,
-    isSelected: selectedValue === null || label === selectedValue,
-  }));
+  const points: ChartDataPoint[] = Object.entries(aggregated)
+    .filter(([label]) => !isBlankLabel(label))
+    .map(([label, value]) => ({
+      label,
+      value,
+      isSelected: selectedValue === null || label === selectedValue,
+    }));
 
   if (sortDesc) {
     points.sort((a, b) => b.value - a.value);
@@ -56,11 +68,13 @@ export function toSortedChartData(
   selectedValue: string | null,
   sortBy: 'label' | 'value' = 'label'
 ): ChartDataPoint[] {
-  const points: ChartDataPoint[] = Object.entries(aggregated).map(([label, value]) => ({
-    label,
-    value,
-    isSelected: selectedValue === null || label === selectedValue,
-  }));
+  const points: ChartDataPoint[] = Object.entries(aggregated)
+    .filter(([label]) => !isBlankLabel(label))
+    .map(([label, value]) => ({
+      label,
+      value,
+      isSelected: selectedValue === null || label === selectedValue,
+    }));
 
   if (sortBy === 'label') {
     points.sort((a, b) => a.label.localeCompare(b.label));

@@ -32,6 +32,12 @@ export function useJourneyData() {
 
   const totalPilgrims = filteredData.length;
 
+  const packageData = useMemo(() => {
+    const stageData = withoutNodeFilter('node_package');
+    const agg = aggregate(groupBy(stageData, 'package'), 'count');
+    return toJourneyPoints(agg, filters.node_package);
+  }, [filters]);
+
   const arrivalDateData = useMemo(() => {
     const stageData = withoutNodeFilter('node_arrival_date');
     const agg = aggregate(groupBy(stageData, 'arrival_date'), 'count');
@@ -89,6 +95,7 @@ export function useJourneyData() {
   return {
     filteredData,
     totalPilgrims,
+    packageData,
     arrivalDateData,
     arrivalCityData,
     arrivalHotelData,

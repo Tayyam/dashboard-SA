@@ -2,13 +2,18 @@ export interface Pilgrim {
   id: number;
   booking_id: string;
   gender: 'Male' | 'Female';
+  name: string;
+  birth_date: string;
+  age: number;
+  guide_name: string;
+  residence_country: string;
   nationality: string;
+  package_id: string;
   package: string;
   arrival_city: string;
   departure_city: string;
   arrival_hotel: string;
   departure_hotel: string;
-  age: number;
   arrival_date: string;                  // YYYY-MM-DD
   arrival_hotel_checkout_date: string;   // YYYY-MM-DD
   departure_city_arrival_date: string;   // YYYY-MM-DD

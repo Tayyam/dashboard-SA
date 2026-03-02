@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Private data files — never commit raw Excel data to the repository
+private/
+*.xlsx
+*.xls
+src/data/*.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

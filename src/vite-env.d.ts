@@ -1,7 +1,8 @@
 /// <reference types="vite/client" />
 
-// Allow importing .xlsx files via the pilgrim-xlsx-loader Vite plugin
-declare module '*.xlsx' {
+// Virtual module resolved at build-time by the pilgrim-xlsx-loader Vite plugin.
+// The actual Excel source file lives in private/data/ and is never served.
+declare module 'virtual:pilgrim-data' {
   import type { Pilgrim } from './core/types';
   export const rawData: Pilgrim[];
 }

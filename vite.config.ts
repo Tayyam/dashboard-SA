@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import * as XLSX from 'xlsx';
 import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 // ── Helper: convert Excel date serial OR date string → YYYY-MM-DD ─────────────
 function toISODate(val: unknown): string {
@@ -15,17 +16,39 @@ function toISODate(val: unknown): string {
 }
 
 // ── Vite plugin: transforms dataSV.xlsx → { rawData: Pilgrim[] } ──────────────
+// The source file lives in private/data/ (outside src/) so it is never served.
+const PRIVATE_XLSX = resolve(__dirname, 'private/data/dataSV.xlsx');
+
 function pilgrimXlsxPlugin(): Plugin {
-  const XLSX_SUFFIX = 'dataSV.xlsx';
+  const VIRTUAL_ID = 'virtual:pilgrim-data';
+  const RESOLVED_VIRTUAL_ID = '\0' + VIRTUAL_ID;
 
   return {
     name: 'pilgrim-xlsx-loader',
     enforce: 'pre',
 
-    load(id) {
-      if (!id.endsWith(XLSX_SUFFIX)) return null;
+    // Block any direct HTTP request to .xlsx files in dev mode
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = (req.url ?? '').toLowerCase().split('?')[0];
+        if (url.endsWith('.xlsx') || url.includes('dataSV') || url.includes('private')) {
+          res.writeHead(403, { 'Content-Type': 'text/plain' });
+          res.end('Forbidden');
+          return;
+        }
+        next();
+      });
+    },
 
-      const wb = XLSX.read(readFileSync(id), { type: 'buffer' });
+    resolveId(id) {
+      if (id === VIRTUAL_ID) return RESOLVED_VIRTUAL_ID;
+      return null;
+    },
+
+    load(id) {
+      if (id !== RESOLVED_VIRTUAL_ID) return null;
+
+      const wb = XLSX.read(readFileSync(PRIVATE_XLSX), { type: 'buffer' });
       const ws = wb.Sheets['main'];
       if (!ws) throw new Error('[pilgrim-xlsx-loader] Sheet "main" not found in dataSV.xlsx');
 
@@ -72,4 +95,12 @@ function pilgrimXlsxPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [pilgrimXlsxPlugin(), react()],
+  server: {
+    // Extra layer: deny requests matching xlsx or private paths at the server level
+    fs: {
+      // Only allow serving files from project root and node_modules; never from private/
+      allow: ['.'],
+      deny: ['private', '.env', '.env.*', '*.xlsx', '*.xls'],
+    },
+  },
 });

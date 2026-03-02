@@ -464,12 +464,16 @@ export function JourneyFlow() {
           {nodes.map((n) => (
             (() => {
               const shouldFade = !n.isSelected || n.value === 0;
+              const isOtherPackageNode = n.filterKey === 'node_package' && n.label === 'other';
               return (
             <g
               key={n.id}
               transform={`translate(${n.x}, ${n.y})`}
               className={shouldFade ? 'journey-node-g is-faded' : 'journey-node-g'}
-              onClick={() => toggleNode(n.filterKey, n.label)}
+              onClick={() => {
+                if (isOtherPackageNode) return;
+                toggleNode(n.filterKey, n.label);
+              }}
               role="button"
             >
               {(() => {

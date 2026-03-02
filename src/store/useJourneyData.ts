@@ -36,7 +36,17 @@ export function useJourneyData() {
   const packageData = useMemo(() => {
     const stageData = withoutNodeFilter('node_package');
     const agg = aggregate(groupBy(stageData, 'package'), 'count');
-    return toJourneyPoints(agg, filters.node_package);
+    const sorted = Object.entries(agg).sort((a, b) => b[1] - a[1]);
+    const topSix = sorted.slice(0, 6);
+    const restSum = sorted.slice(6).reduce((sum, [, value]) => sum + value, 0);
+
+    const compactAgg: Record<string, number> = Object.fromEntries(topSix);
+    if (restSum > 0) compactAgg.other = restSum;
+
+    const selected =
+      filters.node_package && !(filters.node_package in compactAgg) ? null : filters.node_package;
+
+    return toJourneyPoints(compactAgg, selected);
   }, [filters]);
 
   const arrivalDateData = useMemo(() => {

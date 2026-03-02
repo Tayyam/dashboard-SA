@@ -210,6 +210,35 @@
   background: linear-gradient(180deg, #f8fafc 0%, #f2f6fb 100%);
 }
 
+.journey-package-slider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 12px 4px;
+}
+
+.journey-package-btn {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.journey-package-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.journey-package-page {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
 .journey-flow-block {
   flex: 0 0 auto;
 }

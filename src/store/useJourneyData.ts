@@ -36,72 +36,62 @@ export function useJourneyData() {
   const packageData = useMemo(() => {
     const stageData = withoutNodeFilter('node_package');
     const agg = aggregate(groupBy(stageData, 'package'), 'count');
-    const sorted = Object.entries(agg).sort((a, b) => b[1] - a[1]);
-    const topSix = sorted.slice(0, 6);
-    const restSum = sorted.slice(6).reduce((sum, [, value]) => sum + value, 0);
-
-    const compactAgg: Record<string, number> = Object.fromEntries(topSix);
-    if (restSum > 0) compactAgg.other = restSum;
-
-    const selected =
-      filters.node_package && !(filters.node_package in compactAgg) ? null : filters.node_package;
-
-    return toJourneyPoints(compactAgg, selected);
-  }, [filters]);
+    return toJourneyPoints(agg, filters.node_package);
+  }, [filters, data]);
 
   const arrivalDateData = useMemo(() => {
     const stageData = withoutNodeFilter('node_arrival_date');
     const agg = aggregate(groupBy(stageData, 'arrival_date'), 'count');
     return toJourneyPoints(agg, filters.node_arrival_date, true);
-  }, [filters]);
+  }, [filters, data]);
 
   const arrivalCityData = useMemo(() => {
     const stageData = withoutNodeFilter('node_arrival_city');
     const agg = aggregate(groupBy(stageData, 'arrival_city'), 'count');
     return toJourneyPoints(agg, filters.node_arrival_city);
-  }, [filters]);
+  }, [filters, data]);
 
   const arrivalHotelData = useMemo(() => {
     const stageData = withoutNodeFilter('node_arrival_hotel');
     const agg = aggregate(groupBy(stageData, 'arrival_hotel'), 'count');
     return toJourneyPoints(agg, filters.node_arrival_hotel);
-  }, [filters]);
+  }, [filters, data]);
 
   const arrivalHotelCheckoutDateData = useMemo(() => {
     const stageData = withoutNodeFilter('node_arrival_hotel_checkout_date');
     const agg = aggregate(groupBy(stageData, 'arrival_hotel_checkout_date'), 'count');
     return toJourneyPoints(agg, filters.node_arrival_hotel_checkout_date, true);
-  }, [filters]);
+  }, [filters, data]);
 
   const departureCityData = useMemo(() => {
     const stageData = withoutNodeFilter('node_departure_city');
     const agg = aggregate(groupBy(stageData, 'departure_city'), 'count');
     return toJourneyPoints(agg, filters.node_departure_city);
-  }, [filters]);
+  }, [filters, data]);
 
   const departureCityArrivalDateData = useMemo(() => {
     const stageData = withoutNodeFilter('node_departure_city_arrival_date');
     const agg = aggregate(groupBy(stageData, 'departure_city_arrival_date'), 'count');
     return toJourneyPoints(agg, filters.node_departure_city_arrival_date, true);
-  }, [filters]);
+  }, [filters, data]);
 
   const departureHotelData = useMemo(() => {
     const stageData = withoutNodeFilter('node_departure_hotel');
     const agg = aggregate(groupBy(stageData, 'departure_hotel'), 'count');
     return toJourneyPoints(agg, filters.node_departure_hotel);
-  }, [filters]);
+  }, [filters, data]);
 
   const departureHotelCheckoutDateData = useMemo(() => {
     const stageData = withoutNodeFilter('node_departure_hotel_checkout_date');
     const agg = aggregate(groupBy(stageData, 'departure_hotel_checkout_date'), 'count');
     return toJourneyPoints(agg, filters.node_departure_hotel_checkout_date, true);
-  }, [filters]);
+  }, [filters, data]);
 
   const departureDateData = useMemo(() => {
     const stageData = withoutNodeFilter('node_departure_date');
     const agg = aggregate(groupBy(stageData, 'departure_date'), 'count');
     return toJourneyPoints(agg, filters.node_departure_date, true);
-  }, [filters]);
+  }, [filters, data]);
 
   return {
     filteredData,

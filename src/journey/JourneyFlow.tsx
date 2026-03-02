@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useJourneyData } from '../store/useJourneyData';
 import { useJourneyFilters } from '../store/useJourneyFilters';
 import type { Pilgrim } from '../core/types';
@@ -148,9 +148,31 @@ export function JourneyFlow() {
 
   const toggleNode = useJourneyFilters((s) => s.toggleNodeFilter);
   const filters = useJourneyFilters((s) => s.filters);
+  const PACKAGES_PER_PAGE = 6;
+  const [packagePage, setPackagePage] = useState(0);
   const prevNodePosRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const prevEdgePathRef = useRef<Map<string, string>>(new Map());
   const stableStageLabelsRef = useRef<Record<string, string[]>>({});
+
+  const packagePages = Math.max(1, Math.ceil(packageData.length / PACKAGES_PER_PAGE));
+  const pagedPackageData = useMemo(
+    () => packageData.slice(packagePage * PACKAGES_PER_PAGE, packagePage * PACKAGES_PER_PAGE + PACKAGES_PER_PAGE),
+    [packageData, packagePage],
+  );
+
+  useEffect(() => {
+    if (packagePage > packagePages - 1) {
+      setPackagePage(Math.max(0, packagePages - 1));
+    }
+  }, [packagePage, packagePages]);
+
+  useEffect(() => {
+    if (!filters.node_package) return;
+    const selectedIndex = packageData.findIndex((p) => p.label === filters.node_package);
+    if (selectedIndex < 0) return;
+    const targetPage = Math.floor(selectedIndex / PACKAGES_PER_PAGE);
+    if (targetPage !== packagePage) setPackagePage(targetPage);
+  }, [filters.node_package, packageData, packagePage]);
 
   const getStableStageItems = (
     field: StageField,
@@ -185,7 +207,7 @@ export function JourneyFlow() {
       title: 'الباقة',
       field: 'package',
       filterKey: 'node_package',
-      data: getStableStageItems('package', 'node_package', packageData, 7),
+      data: pagedPackageData,
     },
     {
       title: 'تاريخ الوصول',
@@ -401,6 +423,27 @@ export function JourneyFlow() {
 
   return (
     <div className="journey-tree-wrap">
+      {packagePages > 1 && (
+        <div className="journey-package-slider">
+          <button
+            className="journey-package-btn"
+            onClick={() => setPackagePage((p) => Math.max(0, p - 1))}
+            disabled={packagePage === 0}
+          >
+            السابق
+          </button>
+          <span className="journey-package-page">
+            الباقات: {packagePage + 1} / {packagePages}
+          </span>
+          <button
+            className="journey-package-btn"
+            onClick={() => setPackagePage((p) => Math.min(packagePages - 1, p + 1))}
+            disabled={packagePage === packagePages - 1}
+          >
+            التالي
+          </button>
+        </div>
+      )}
       <svg
         className="journey-tree-svg"
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
@@ -464,16 +507,12 @@ export function JourneyFlow() {
           {nodes.map((n) => (
             (() => {
               const shouldFade = !n.isSelected || n.value === 0;
-              const isOtherPackageNode = n.filterKey === 'node_package' && n.label === 'other';
               return (
             <g
               key={n.id}
               transform={`translate(${n.x}, ${n.y})`}
               className={shouldFade ? 'journey-node-g is-faded' : 'journey-node-g'}
-              onClick={() => {
-                if (isOtherPackageNode) return;
-                toggleNode(n.filterKey, n.label);
-              }}
+              onClick={() => toggleNode(n.filterKey, n.label)}
               role="button"
             >
               {(() => {

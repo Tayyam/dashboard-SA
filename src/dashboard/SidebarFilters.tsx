@@ -1,7 +1,7 @@
 import { useFilters } from '../store/useFilters';
-import { rawData } from '../data/rawData';
 import { useMemo } from 'react';
 import type { Filters } from '../core/types';
+import { usePilgrimsData } from '../store/usePilgrimsData';
 
 function unique(arr: string[]): string[] {
   const invalid = new Set(['', 'null', 'undefined', 'nan']);
@@ -48,24 +48,25 @@ function SelectFilter({
 export function SidebarFilters() {
   const clearAll = useFilters((s) => s.clearAllFilters);
   const filters  = useFilters((s) => s.filters);
+  const data = usePilgrimsData((s) => s.data);
 
   const activeCount = useMemo(
     () => Object.values(filters).filter(Boolean).length,
     [filters],
   );
 
-  const arrivalDates = useMemo(() => unique(rawData.map((p) => p.arrival_date)), []);
+  const arrivalDates = useMemo(() => unique(data.map((p) => p.arrival_date)), [data]);
   const years = useMemo(
-    () => unique(rawData.map((p) => new Date(p.arrival_date).getFullYear().toString())),
-    [],
+    () => unique(data.map((p) => new Date(p.arrival_date).getFullYear().toString())),
+    [data],
   );
   const months = useMemo(
-    () => unique(rawData.map((p) => (new Date(p.arrival_date).getMonth() + 1).toString())),
-    [],
+    () => unique(data.map((p) => (new Date(p.arrival_date).getMonth() + 1).toString())),
+    [data],
   );
   const days = useMemo(
-    () => unique(rawData.map((p) => new Date(p.arrival_date).getDate().toString())),
-    [],
+    () => unique(data.map((p) => new Date(p.arrival_date).getDate().toString())),
+    [data],
   );
 
   return (
@@ -85,10 +86,10 @@ export function SidebarFilters() {
         <SelectFilter label="السنة"         filterKey="year"          options={years} />
         <SelectFilter label="الشهر"         filterKey="month"         options={months} />
         <SelectFilter label="اليوم"         filterKey="day"           options={days} />
-        <SelectFilter label="مدينة الوصول"  filterKey="arrival_city"  options={unique(rawData.map((p) => p.arrival_city))} />
-        <SelectFilter label="مدينة المغادرة" filterKey="departure_city" options={unique(rawData.map((p) => p.departure_city))} />
-        <SelectFilter label="اسم الباقة"   filterKey="package"       options={unique(rawData.map((p) => p.package))} />
-        <SelectFilter label="الجنس"         filterKey="gender"        options={unique(rawData.map((p) => p.gender))} />
+        <SelectFilter label="مدينة الوصول"  filterKey="arrival_city"  options={unique(data.map((p) => p.arrival_city))} />
+        <SelectFilter label="مدينة المغادرة" filterKey="departure_city" options={unique(data.map((p) => p.departure_city))} />
+        <SelectFilter label="اسم الباقة"   filterKey="package"       options={unique(data.map((p) => p.package))} />
+        <SelectFilter label="الجنس"         filterKey="gender"        options={unique(data.map((p) => p.gender))} />
       </div>
     </aside>
   );

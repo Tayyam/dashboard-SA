@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { rawData } from '../data/rawData';
 import { applyJourneyFilters, type JourneyFilters } from '../core/journeyFilterEngine';
 import { groupBy, aggregate } from '../core/aggregationEngine';
 import { useJourneyFilters } from './useJourneyFilters';
 import type { ChartDataPoint } from '../core/types';
+import { usePilgrimsData } from './usePilgrimsData';
 
 function toJourneyPoints(
   agg: Record<string, number>,
@@ -22,12 +22,13 @@ function toJourneyPoints(
 
 export function useJourneyData() {
   const filters = useJourneyFilters((s) => s.filters);
+  const data = usePilgrimsData((s) => s.data);
   const withoutNodeFilter = (key: keyof JourneyFilters) =>
-    applyJourneyFilters(rawData, { ...filters, [key]: null });
+    applyJourneyFilters(data, { ...filters, [key]: null });
 
   const filteredData = useMemo(
-    () => applyJourneyFilters(rawData, filters),
-    [filters]
+    () => applyJourneyFilters(data, filters),
+    [data, filters]
   );
 
   const totalPilgrims = filteredData.length;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../core/supabaseClient';
 import type { UserProfileRow } from '../core/authAccess';
+import * as XLSX from 'xlsx';
 
 interface ApprovalsPageProps {
   adminUserId: string;
@@ -21,6 +22,39 @@ interface AccountRow {
   role: string;
 }
 
+type PilgrimPreviewRow = Record<string, unknown>;
+const PILGRIMS_COLUMNS = [
+  'id',
+  'booking_id',
+  'gender',
+  'name',
+  'birth_date',
+  'age',
+  'guide_name',
+  'residence_country',
+  'nationality',
+  'package_id',
+  'package',
+  'arrival_city',
+  'departure_city',
+  'arrival_hotel',
+  'arrival_hotel_location',
+  'departure_hotel',
+  'departure_hotel_location',
+  'arrival_date',
+  'arrival_hotel_checkout_date',
+  'departure_city_arrival_date',
+  'departure_hotel_checkout_date',
+  'departure_date',
+  'visa_status',
+  'inside_kingdom',
+  'makkah_room_type',
+  'madinah_room_type',
+  'flight_contract_type',
+  'created_at',
+  'updated_at',
+] as const;
+
 /* ── Status helpers ────────────────────────────────────────────── */
 const STATUS_LABEL: Record<AccountStatus, string> = {
   pending:  'معلّق',
@@ -34,8 +68,24 @@ const STATUS_CLASS: Record<AccountStatus, string> = {
   rejected: 'badge-rejected',
 };
 
+function toISODate(val: unknown): string {
+  if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) return val.slice(0, 10);
+  if (typeof val === 'number') {
+    const ms = Math.round((val - 25569) * 86400_000);
+    return new Date(ms).toISOString().slice(0, 10);
+  }
+  return '';
+}
+
+const toText = (val: unknown): string => (val == null ? '' : String(val).trim());
+const toDbDate = (val: unknown): string | null => {
+  const d = toISODate(val);
+  return d || null;
+};
+
 export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
   const db = supabase.schema('publicsv');
+  const PREVIEW_PAGE_SIZE = 20;
 
   const [rows, setRows]                   = useState<AccountRow[]>([]);
   const [loading, setLoading]             = useState(true);
@@ -48,6 +98,15 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
   const [resetPwdValue, setResetPwdValue] = useState('');
   const [autoApprove, setAutoApprove]     = useState<boolean>(false);
   const [settingLoading, setSettingLoading] = useState(false);
+  const [uploadingPilgrims, setUploadingPilgrims] = useState(false);
+  const [uploadInfo, setUploadInfo] = useState<string | null>(null);
+  const [hasAdminAccess, setHasAdminAccess] = useState<boolean | null>(null);
+  const [previewRows, setPreviewRows] = useState<PilgrimPreviewRow[]>([]);
+  const [previewTotal, setPreviewTotal] = useState(0);
+  const [previewPage, setPreviewPage] = useState(1);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [showPilgrimsPreview, setShowPilgrimsPreview] = useState(false);
 
   /* ── Load all accounts & settings ─────────────────────────────── */
   const load = async () => {
@@ -126,7 +185,58 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  const loadPilgrimsPreview = async (page: number) => {
+    setPreviewLoading(true);
+    setPreviewError(null);
+    try {
+      const from = (page - 1) * PREVIEW_PAGE_SIZE;
+      const to = from + PREVIEW_PAGE_SIZE - 1;
+      const { data, count, error: pe } = await db
+        .from('pilgrims')
+        .select(PILGRIMS_COLUMNS.join(','), { count: 'exact' })
+        .order('id', { ascending: true })
+        .range(from, to);
+      if (pe) throw pe;
+      setPreviewRows(((data ?? []) as unknown) as PilgrimPreviewRow[]);
+      setPreviewTotal(count ?? 0);
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : 'فشل تحميل معاينة جدول الحجاج');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const init = async () => {
+      try {
+        const { data, error: roleError } = await db
+          .from('users')
+          .select('role')
+          .eq('id', adminUserId)
+          .single();
+        if (roleError) throw roleError;
+        const isAdmin = data?.role === 'admin';
+        if (cancelled) return;
+        setHasAdminAccess(isAdmin);
+        if (!isAdmin) return;
+        await load();
+      } catch (err) {
+        if (cancelled) return;
+        setHasAdminAccess(false);
+        setError(err instanceof Error ? err.message : 'غير مصرح لك بالدخول لهذه الصفحة');
+      }
+    };
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, [adminUserId]);
+
+  useEffect(() => {
+    if (hasAdminAccess !== true || !showPilgrimsPreview) return;
+    loadPilgrimsPreview(previewPage);
+  }, [previewPage, hasAdminAccess, showPilgrimsPreview]);
 
   /* ── Derived counts ────────────────────────────────────────────── */
   const counts = useMemo(() => ({
@@ -235,6 +345,87 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
     }
   };
 
+  const handlePilgrimsExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setUploadingPilgrims(true);
+    setUploadInfo(null);
+    setError(null);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const mainSheet = workbook.Sheets.main;
+      if (!mainSheet) {
+        throw new Error('لم يتم العثور على sheet باسم main داخل ملف الإكسل.');
+      }
+
+      type Row = Record<string, unknown>;
+      const dataRows = XLSX.utils.sheet_to_json<Row>(mainSheet, { defval: null });
+      if (dataRows.length === 0) {
+        throw new Error('Sheet main فارغة ولا تحتوي على بيانات.');
+      }
+
+      const pilgrimsPayload = dataRows.map((row, idx) => {
+        const contractRaw = toText(row.Flight_contract_type).toUpperCase();
+        const genderRaw = toText(row.gender).toLowerCase();
+        const insideRaw = toText(row.inside_kingdom).toLowerCase();
+
+        return {
+          booking_id: toText(row.nusuk_id) || toText(row.Booking_ID) || `SV-${idx + 1}`,
+          gender: genderRaw === 'male' ? 'Male' : 'Female',
+          name: toText(row.name),
+          birth_date: toDbDate(row.birth_date),
+          age: Number(row.Age ?? 0),
+          guide_name: toText(row.guide_name),
+          residence_country: toText(row.residence_country),
+          nationality: toText(row.nationality),
+          package_id: toText(row.package_id),
+          package: toText(row.package_name),
+          arrival_city: toText(row.Dep_Destination),
+          departure_city: toText(row.Ret_Origin),
+          arrival_hotel: toText(row['packages.first_hotel_name']),
+          arrival_hotel_location: toText(row['packages.first_hotel_location']),
+          departure_hotel: toText(row.last_hotel_name),
+          departure_hotel_location: toText(row['packages.second_hotel_location']),
+          arrival_date: toDbDate(row.Dep_Arr_Date),
+          arrival_hotel_checkout_date: toDbDate(row['packages.first_hotel_check_out']),
+          departure_city_arrival_date: toDbDate(row.last_hotel_check_in),
+          departure_hotel_checkout_date: toDbDate(row.last_hotel_check_out),
+          departure_date: toDbDate(row.Ret_Date),
+          visa_status: toText(row.visa_status),
+          inside_kingdom: insideRaw === 'true' || insideRaw === '1' || insideRaw === 'yes' || insideRaw === 'نعم',
+          makkah_room_type: 'triple',
+          madinah_room_type: 'triple',
+          flight_contract_type: contractRaw === 'B2B' ? 'B2B' : 'GDS',
+        };
+      });
+
+      // PostgREST requires a WHERE clause for DELETE in this project setup.
+      const { error: deleteError } = await db.from('pilgrims').delete().gt('id', 0);
+      if (deleteError) throw deleteError;
+
+      const CHUNK_SIZE = 500;
+      for (let i = 0; i < pilgrimsPayload.length; i += CHUNK_SIZE) {
+        const chunk = pilgrimsPayload.slice(i, i + CHUNK_SIZE);
+        const { error: insertError } = await db.from('pilgrims').insert(chunk);
+        if (insertError) throw insertError;
+      }
+
+      if (showPilgrimsPreview) {
+        setPreviewPage(1);
+        await loadPilgrimsPreview(1);
+      }
+      setUploadInfo(`تم تحديث جدول الحجاج بنجاح (${pilgrimsPayload.length.toLocaleString()} سجل).`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'فشل رفع ملف الحجاج.');
+    } finally {
+      setUploadingPilgrims(false);
+    }
+  };
+
   /* ── Confirm helpers ───────────────────────────────────────────── */
   const askConfirm = (row: AccountRow, action: 'delete' | 'revoke' | 'reset_pwd' | 'promote' | 'downgrade') => {
     setConfirmRow(row);
@@ -251,7 +442,17 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
     if (confirmAction === 'downgrade') setRole(confirmRow, 'user');
   };
 
+  const previewPages = Math.max(1, Math.ceil(previewTotal / PREVIEW_PAGE_SIZE));
+
   /* ── Render ────────────────────────────────────────────────────── */
+  if (hasAdminAccess === false) {
+    return (
+      <div className="admin-page">
+        <p className="approval-error">غير مصرح لك بالوصول إلى صفحة إدارة الحسابات.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-page">
 
@@ -263,6 +464,33 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
         </div>
 
         <div className="admin-topbar-actions">
+          <input
+            id="pilgrims-excel-upload"
+            type="file"
+            accept=".xlsx,.xls"
+            style={{ display: 'none' }}
+            onChange={handlePilgrimsExcelUpload}
+          />
+          <label
+            htmlFor="pilgrims-excel-upload"
+            className={`admin-refresh-btn${uploadingPilgrims ? ' is-disabled' : ''}`}
+            style={uploadingPilgrims ? { pointerEvents: 'none', opacity: 0.6 } : undefined}
+            title="رفع ملف الحجاج (Sheet: main)"
+          >
+            {uploadingPilgrims ? 'جارٍ رفع الملف...' : 'رفع ملف الحجاج'}
+          </label>
+          <button
+            className="admin-refresh-btn"
+            onClick={() => {
+              const next = !showPilgrimsPreview;
+              setShowPilgrimsPreview(next);
+              if (next) setPreviewPage(1);
+            }}
+            title="عرض أو إخفاء معاينة جدول الحجاج"
+          >
+            {showPilgrimsPreview ? 'إخفاء معاينة جدول الحجاج' : 'عرض معاينة جدول الحجاج'}
+          </button>
+
           {/* Auto Approve Toggle */}
           <div className="auto-approve-toggle-wrap">
             <span className="auto-approve-label">الموافقة التلقائية</span>
@@ -321,6 +549,7 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
       </div>
 
       {error && <p className="approval-error">{error}</p>}
+      {uploadInfo && <p className="approval-loading">{uploadInfo}</p>}
 
       {/* Table */}
       {loading ? (
@@ -465,6 +694,71 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
           )}
         </div>
       )}
+
+      {/* Pilgrims Table Preview (admin only) */}
+      {showPilgrimsPreview && <div className="admin-pilgrims-preview">
+        <div className="admin-topbar" style={{ marginTop: 6 }}>
+          <div className="admin-topbar-title">
+            <h2>معاينة جدول الحجاج الأصلي</h2>
+            <span className="admin-topbar-sub">
+              إجمالي {previewTotal.toLocaleString()} سجل
+            </span>
+          </div>
+        </div>
+
+        {previewError && <p className="approval-error">{previewError}</p>}
+        {previewLoading ? (
+          <p className="approval-loading">جاري تحميل المعاينة...</p>
+        ) : (
+          <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
+            {previewRows.length === 0 ? (
+              <p className="approval-empty">لا توجد بيانات في جدول الحجاج.</p>
+            ) : (
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    {PILGRIMS_COLUMNS.map((col) => (
+                      <th key={col}>{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {previewRows.map((r, idx) => (
+                    <tr key={String(r.id ?? idx)}>
+                      {PILGRIMS_COLUMNS.map((col) => {
+                        const value = r[col];
+                        return <td key={col}>{value == null || value === '' ? '—' : String(value)}</td>;
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {previewPages > 1 && (
+          <div className="pilgrims-table-pagination">
+            <button
+              className="pt-btn"
+              onClick={() => setPreviewPage((p) => Math.max(1, p - 1))}
+              disabled={previewPage === 1 || previewLoading}
+            >
+              ‹ السابق
+            </button>
+            <span className="pt-pages">
+              {previewPage} / {previewPages}
+            </span>
+            <button
+              className="pt-btn"
+              onClick={() => setPreviewPage((p) => Math.min(previewPages, p + 1))}
+              disabled={previewPage === previewPages || previewLoading}
+            >
+              التالي ›
+            </button>
+          </div>
+        )}
+      </div>}
 
       {/* Confirm dialog */}
       {confirmRow && confirmAction && (

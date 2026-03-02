@@ -1,5 +1,6 @@
 import { useDashboardData } from './store/useDashboardData';
 import { useFilters } from './store/useFilters';
+import { usePilgrimsData } from './store/usePilgrimsData';
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { KPICards } from './dashboard/KPICards';
@@ -186,6 +187,13 @@ export default function App() {
   const userEmail = session?.user?.email ?? 'user';
   const isAdmin = role === 'admin';
   const isApproved = isAdmin || approvalStatus === 'approved';
+  const fetchPilgrimsData = usePilgrimsData((s) => s.fetchData);
+
+  useEffect(() => {
+    if (!session || !isApproved) return;
+    fetchPilgrimsData();
+  }, [session, isApproved, fetchPilgrimsData]);
+
   const saveProfile = async (payload: ProfilePayload, options?: { markProfileCompleted?: boolean }) => {
     if (!session) return;
     const { error } = await supabase

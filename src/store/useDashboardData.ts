@@ -1,16 +1,17 @@
 import { useMemo } from 'react';
-import { rawData } from '../data/rawData';
 import { applyFilters } from '../core/filterEngine';
 import { groupBy, aggregate, toChartData, toSortedChartData } from '../core/aggregationEngine';
 import { useFilters } from './useFilters';
 import { DIMENSIONS } from '../core/dimensions';
+import { usePilgrimsData } from './usePilgrimsData';
 
 const ZERO_ROOMS = { triple: 0, double: 0, quad: 0 };
 
 export function useDashboardData() {
   const filters = useFilters((s) => s.filters);
+  const data = usePilgrimsData((s) => s.data);
 
-  const filteredData = useMemo(() => applyFilters(rawData, filters), [filters]);
+  const filteredData = useMemo(() => applyFilters(data, filters), [data, filters]);
 
   // ── KPI ──────────────────────────────────────────────────────────────────
   const totalPilgrims = filteredData.length;

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { rawData } from '../data/rawData';
 import { useJourneyFilters } from '../store/useJourneyFilters';
 import { DateRangeSlider } from './DateRangeSlider';
 import type { JourneyFilters } from '../core/journeyFilterEngine';
+import { usePilgrimsData } from '../store/usePilgrimsData';
 
 function unique(arr: string[]) {
   const invalid = new Set(['', 'null', 'undefined', 'nan']);
@@ -66,14 +66,15 @@ export function JourneySidebarFilters() {
   const filters  = useJourneyFilters((s) => s.filters);
   const setFilter = useJourneyFilters((s) => s.setSidebarFilter);
   const clearAll  = useJourneyFilters((s) => s.clearAll);
+  const data = usePilgrimsData((s) => s.data);
 
   const activeCount = useMemo(
     () => Object.values(filters).filter(Boolean).length,
     [filters]
   );
 
-  const arrivalDates  = useMemo(() => unique(rawData.map((p) => p.arrival_date)), []);
-  const departureDates = useMemo(() => unique(rawData.map((p) => p.departure_date)), []);
+  const arrivalDates = useMemo(() => unique(data.map((p) => p.arrival_date)), [data]);
+  const departureDates = useMemo(() => unique(data.map((p) => p.departure_date)), [data]);
 
   return (
     <aside className={`sidebar journey-sidebar${collapsed ? ' is-collapsed' : ''}`}>
@@ -128,32 +129,32 @@ export function JourneySidebarFilters() {
         <SelectFilter
           label="مدينة الوصول"
           filterKey="dropdown_arrival_city"
-          options={unique(rawData.map((p) => p.arrival_city))}
+          options={unique(data.map((p) => p.arrival_city))}
         />
         <SelectFilter
           label="فندق الوصول"
           filterKey="dropdown_arrival_hotel"
-          options={unique(rawData.map((p) => p.arrival_hotel))}
+          options={unique(data.map((p) => p.arrival_hotel))}
         />
         <SelectFilter
           label="مدينة المغادرة"
           filterKey="dropdown_departure_city"
-          options={unique(rawData.map((p) => p.departure_city))}
+          options={unique(data.map((p) => p.departure_city))}
         />
         <SelectFilter
           label="فندق المغادرة"
           filterKey="dropdown_departure_hotel"
-          options={unique(rawData.map((p) => p.departure_hotel))}
+          options={unique(data.map((p) => p.departure_hotel))}
         />
         <SelectFilter
           label="الجنس"
           filterKey="dropdown_gender"
-          options={unique(rawData.map((p) => p.gender))}
+          options={unique(data.map((p) => p.gender))}
         />
         <SelectFilter
           label="الجنسية"
           filterKey="dropdown_nationality"
-          options={unique(rawData.map((p) => p.nationality))}
+          options={unique(data.map((p) => p.nationality))}
         />
         <BookingIdSearch />
       </div>}

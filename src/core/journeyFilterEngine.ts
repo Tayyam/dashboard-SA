@@ -76,6 +76,8 @@ export function applyJourneyFilters(data: Pilgrim[], f: JourneyFilters): Pilgrim
       const q = f.table_search.trim().toLowerCase();
       if (q) {
         const searchMatch =
+          String(p.id).toLowerCase().includes(q) ||
+          p.group_id.toLowerCase().includes(q) ||
           p.name.toLowerCase().includes(q) ||
           p.nationality.toLowerCase().includes(q) ||
           p.package.toLowerCase().includes(q) ||

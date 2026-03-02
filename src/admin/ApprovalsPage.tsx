@@ -25,6 +25,7 @@ interface AccountRow {
 type PilgrimPreviewRow = Record<string, unknown>;
 const PILGRIMS_COLUMNS = [
   'id',
+  'group_id',
   'booking_id',
   'gender',
   'name',
@@ -81,6 +82,21 @@ const toText = (val: unknown): string => (val == null ? '' : String(val).trim())
 const toDbDate = (val: unknown): string | null => {
   const d = toISODate(val);
   return d || null;
+};
+const isMissingGroupIdColumnError = (err: unknown): boolean => {
+  if (!err || typeof err !== 'object') return false;
+  const maybe = err as { code?: string; message?: string };
+  const msg = (maybe.message ?? '').toLowerCase();
+  return (
+    (maybe.code === 'PGRST204' && msg.includes("'group_id'")) ||
+    (maybe.code === '42703' && msg.includes('group_id'))
+  );
+};
+
+const asNumberId = (val: unknown, fallback: number): number => {
+  const n = Number(String(val ?? '').trim());
+  if (Number.isFinite(n) && n > 0) return n;
+  return fallback;
 };
 
 export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
@@ -191,11 +207,22 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
     try {
       const from = (page - 1) * PREVIEW_PAGE_SIZE;
       const to = from + PREVIEW_PAGE_SIZE - 1;
-      const { data, count, error: pe } = await db
+      let { data, count, error: pe } = await db
         .from('pilgrims')
         .select(PILGRIMS_COLUMNS.join(','), { count: 'exact' })
         .order('id', { ascending: true })
         .range(from, to);
+      if (pe && isMissingGroupIdColumnError(pe)) {
+        const fallbackCols = PILGRIMS_COLUMNS.filter((c) => c !== 'group_id').join(',');
+        const retry = await db
+          .from('pilgrims')
+          .select(fallbackCols, { count: 'exact' })
+          .order('id', { ascending: true })
+          .range(from, to);
+        data = retry.data;
+        count = retry.count;
+        pe = retry.error;
+      }
       if (pe) throw pe;
       setPreviewRows(((data ?? []) as unknown) as PilgrimPreviewRow[]);
       setPreviewTotal(count ?? 0);
@@ -372,9 +399,12 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
         const contractRaw = toText(row.Flight_contract_type).toUpperCase();
         const genderRaw = toText(row.gender).toLowerCase();
         const insideRaw = toText(row.inside_kingdom).toLowerCase();
+        const idSource = toText(row.nusuk_id) || toText(row.Booking_ID);
 
         return {
-          booking_id: toText(row.nusuk_id) || toText(row.Booking_ID) || `SV-${idx + 1}`,
+          id: asNumberId(idSource, idx + 1),
+          group_id: toText(row.group_id),
+          booking_id: idSource || `SV-${idx + 1}`,
           gender: genderRaw === 'male' ? 'Male' : 'Female',
           name: toText(row.name),
           birth_date: toDbDate(row.birth_date),
@@ -403,14 +433,32 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
         };
       });
 
+      // Keep one row per nusuk_id (id) to avoid PK collisions during import.
+      const dedupedMap = new Map<number, (typeof pilgrimsPayload)[number]>();
+      for (const row of pilgrimsPayload) dedupedMap.set(row.id, row);
+      const dedupedPilgrimsPayload = Array.from(dedupedMap.values());
+
       // PostgREST requires a WHERE clause for DELETE in this project setup.
       const { error: deleteError } = await db.from('pilgrims').delete().gt('id', 0);
       if (deleteError) throw deleteError;
 
+      // Detect support for group_id column once, then choose payload shape.
+      let supportsGroupIdColumn = true;
+      {
+        const probe = await db.from('pilgrims').select('group_id').limit(1);
+        if (probe.error && isMissingGroupIdColumnError(probe.error)) {
+          supportsGroupIdColumn = false;
+        } else if (probe.error) {
+          throw probe.error;
+        }
+      }
+
       const CHUNK_SIZE = 500;
-      for (let i = 0; i < pilgrimsPayload.length; i += CHUNK_SIZE) {
-        const chunk = pilgrimsPayload.slice(i, i + CHUNK_SIZE);
-        const { error: insertError } = await db.from('pilgrims').insert(chunk);
+      for (let i = 0; i < dedupedPilgrimsPayload.length; i += CHUNK_SIZE) {
+        const chunk = dedupedPilgrimsPayload.slice(i, i + CHUNK_SIZE);
+        const payload =
+          supportsGroupIdColumn ? chunk : chunk.map(({ group_id: _ignored, ...rest }) => rest);
+        const { error: insertError } = await db.from('pilgrims').insert(payload);
         if (insertError) throw insertError;
       }
 
@@ -418,7 +466,12 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
         setPreviewPage(1);
         await loadPilgrimsPreview(1);
       }
-      setUploadInfo(`تم تحديث جدول الحجاج بنجاح (${pilgrimsPayload.length.toLocaleString()} سجل).`);
+      const droppedDuplicates = pilgrimsPayload.length - dedupedPilgrimsPayload.length;
+      setUploadInfo(
+        droppedDuplicates > 0
+          ? `تم تحديث جدول الحجاج بنجاح (${dedupedPilgrimsPayload.length.toLocaleString()} سجل) مع حذف ${droppedDuplicates.toLocaleString()} سجل مكرر في nusuk_id.`
+          : `تم تحديث جدول الحجاج بنجاح (${dedupedPilgrimsPayload.length.toLocaleString()} سجل).`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'فشل رفع ملف الحجاج.');
     } finally {

@@ -1,5 +1,6 @@
 export interface Pilgrim {
   id: number;
+  group_id: string;
   booking_id: string;
   gender: 'Male' | 'Female';
   name: string;

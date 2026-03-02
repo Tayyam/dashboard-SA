@@ -40,6 +40,8 @@ export function PilgrimsTable({
       if (!q) return true;
 
       return (
+        String(p.id).toLowerCase().includes(q) ||
+        p.group_id.toLowerCase().includes(q) ||
         p.name.toLowerCase().includes(q) ||
         p.nationality.toLowerCase().includes(q) ||
         p.package.toLowerCase().includes(q) ||
@@ -86,7 +88,7 @@ export function PilgrimsTable({
           <input
             className="pilgrims-table-search"
             type="text"
-            placeholder="بحث بالاسم، الجنسية، الباقة..."
+            placeholder="بحث بـ nusuk_id أو group_id أو الاسم..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
           />
@@ -98,7 +100,8 @@ export function PilgrimsTable({
         <table className="pilgrims-table">
           <thead>
             <tr>
-              <th>#</th>
+              <th>nusuk_id</th>
+              <th>group_id</th>
               <th>الجنس</th>
               <th>الاسم</th>
               <th>تاريخ الميلاد</th>
@@ -113,12 +116,13 @@ export function PilgrimsTable({
           <tbody>
             {slice.length === 0 ? (
               <tr>
-                <td colSpan={10} className="pilgrims-table-empty">لا توجد نتائج</td>
+                <td colSpan={11} className="pilgrims-table-empty">لا توجد نتائج</td>
               </tr>
             ) : (
               slice.map((p) => (
                 <tr key={p.id}>
                   <td className="pilgrims-table-num">{p.id}</td>
+                  <td>{p.group_id || '—'}</td>
                   <td>
                     <span className={`gender-badge gender-${p.gender.toLowerCase()}`}>
                       {GENDER_LABEL[p.gender] ?? p.gender}

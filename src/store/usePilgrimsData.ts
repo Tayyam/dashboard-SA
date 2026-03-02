@@ -27,8 +27,16 @@ function normalizePilgrim(row: Record<string, unknown>, index: number): Pilgrim 
   const makkahType = toText(row.makkah_room_type);
   const madinahType = toText(row.madinah_room_type);
 
+  const groupIdRaw =
+    row.group_id ??
+    row.groupId ??
+    row.groupid ??
+    row['group id'] ??
+    '';
+
   return {
-    id: toNum(row.id) || index + 1,
+    id: toNum(row.id) || toNum(row.nusuk_id) || toNum(row.booking_id) || index + 1,
+    group_id: toText(groupIdRaw),
     booking_id: toText(row.booking_id),
     gender: genderRaw === 'Male' ? 'Male' : 'Female',
     name: toText(row.name),

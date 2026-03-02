@@ -2,53 +2,29 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import * as XLSX from 'xlsx';
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
 
-// ── Helper: convert Excel date serial OR date string → YYYY-MM-DD ─────────────
+// Helper: convert Excel date serial OR date string -> YYYY-MM-DD
 function toISODate(val: unknown): string {
   if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) return val.slice(0, 10);
   if (typeof val === 'number') {
-    // Excel epoch: days since 1899-12-30
     const ms = Math.round((val - 25569) * 86400_000);
     return new Date(ms).toISOString().slice(0, 10);
   }
   return '';
 }
 
-// ── Vite plugin: transforms dataSV.xlsx → { rawData: Pilgrim[] } ──────────────
-// The source file lives in private/data/ (outside src/) so it is never served.
-const PRIVATE_XLSX = resolve(__dirname, 'private/data/dataSV.xlsx');
-
+// Vite plugin: transforms dataSV.xlsx -> { rawData: Pilgrim[] }
 function pilgrimXlsxPlugin(): Plugin {
-  const VIRTUAL_ID = 'virtual:pilgrim-data';
-  const RESOLVED_VIRTUAL_ID = '\0' + VIRTUAL_ID;
+  const XLSX_SUFFIX = 'dataSV.xlsx';
 
   return {
     name: 'pilgrim-xlsx-loader',
     enforce: 'pre',
 
-    // Block any direct HTTP request to .xlsx files in dev mode
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const url = (req.url ?? '').toLowerCase().split('?')[0];
-        if (url.endsWith('.xlsx') || url.includes('dataSV') || url.includes('private')) {
-          res.writeHead(403, { 'Content-Type': 'text/plain' });
-          res.end('Forbidden');
-          return;
-        }
-        next();
-      });
-    },
-
-    resolveId(id) {
-      if (id === VIRTUAL_ID) return RESOLVED_VIRTUAL_ID;
-      return null;
-    },
-
     load(id) {
-      if (id !== RESOLVED_VIRTUAL_ID) return null;
+      if (!id.endsWith(XLSX_SUFFIX)) return null;
 
-      const wb = XLSX.read(readFileSync(PRIVATE_XLSX), { type: 'buffer' });
+      const wb = XLSX.read(readFileSync(id), { type: 'buffer' });
       const ws = wb.Sheets['main'];
       if (!ws) throw new Error('[pilgrim-xlsx-loader] Sheet "main" not found in dataSV.xlsx');
 
@@ -59,36 +35,36 @@ function pilgrimXlsxPlugin(): Plugin {
 
       const pilgrims = dataRows.map((row, idx) => {
         const contractRaw = toText(row['Flight_contract_type']).toUpperCase();
-        const genderRaw   = toText(row['gender']).toLowerCase();
+        const genderRaw = toText(row['gender']).toLowerCase();
 
         return {
-          id:                            idx + 1,
-          booking_id:                    toText(row['nusuk_id']) || toText(row['Booking_ID']) || `SV-${idx + 1}`,
-          gender:                        genderRaw === 'male' ? 'Male' : 'Female',
-          name:                          toText(row['name']),
-          birth_date:                    toISODate(row['birth_date']),
-          age:                           Number(row['Age'] ?? 0),
-          guide_name:                    toText(row['guide_name']),
-          residence_country:             toText(row['residence_country']),
-          nationality:                   toText(row['nationality']),
-          package_id:                    toText(row['package_id']),
-          package:                       toText(row['package_name']),
-          arrival_city:                  toText(row['Dep_Destination']),
-          departure_city:                toText(row['Ret_Origin']),
-          arrival_hotel:                 toText(row['packages.first_hotel_name']),
-          arrival_hotel_location:        toText(row['packages.first_hotel_location']),
-          departure_hotel:               toText(row['last_hotel_name']),
-          departure_hotel_location:      toText(row['packages.second_hotel_location']),
-          arrival_date:                  toISODate(row['Dep_Arr_Date']),
-          arrival_hotel_checkout_date:   toISODate(row['packages.first_hotel_check_out']),
-          departure_city_arrival_date:   toISODate(row['last_hotel_check_in']),
+          id: idx + 1,
+          booking_id: toText(row['nusuk_id']) || toText(row['Booking_ID']) || `SV-${idx + 1}`,
+          gender: genderRaw === 'male' ? 'Male' : 'Female',
+          name: toText(row['name']),
+          birth_date: toISODate(row['birth_date']),
+          age: Number(row['Age'] ?? 0),
+          guide_name: toText(row['guide_name']),
+          residence_country: toText(row['residence_country']),
+          nationality: toText(row['nationality']),
+          package_id: toText(row['package_id']),
+          package: toText(row['package_name']),
+          arrival_city: toText(row['Dep_Destination']),
+          departure_city: toText(row['Ret_Origin']),
+          arrival_hotel: toText(row['packages.first_hotel_name']),
+          arrival_hotel_location: toText(row['packages.first_hotel_location']),
+          departure_hotel: toText(row['last_hotel_name']),
+          departure_hotel_location: toText(row['packages.second_hotel_location']),
+          arrival_date: toISODate(row['Dep_Arr_Date']),
+          arrival_hotel_checkout_date: toISODate(row['packages.first_hotel_check_out']),
+          departure_city_arrival_date: toISODate(row['last_hotel_check_in']),
           departure_hotel_checkout_date: toISODate(row['last_hotel_check_out']),
-          departure_date:                toISODate(row['Ret_Date']),
-          visa_status:                   toText(row['visa_status']),
-          inside_kingdom:                String(row['inside_kingdom'] ?? '').trim().toLowerCase() === 'true',
-          makkah_room_type:              'triple',
-          madinah_room_type:             'triple',
-          flight_contract_type:          contractRaw === 'B2B' ? 'B2B' : 'GDS',
+          departure_date: toISODate(row['Ret_Date']),
+          visa_status: toText(row['visa_status']),
+          inside_kingdom: String(row['inside_kingdom'] ?? '').trim().toLowerCase() === 'true',
+          makkah_room_type: 'triple',
+          madinah_room_type: 'triple',
+          flight_contract_type: contractRaw === 'B2B' ? 'B2B' : 'GDS',
         };
       });
 
@@ -99,12 +75,4 @@ function pilgrimXlsxPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [pilgrimXlsxPlugin(), react()],
-  server: {
-    // Extra layer: deny requests matching xlsx or private paths at the server level
-    fs: {
-      // Only allow serving files from project root and node_modules; never from private/
-      allow: ['.'],
-      deny: ['private', '.env', '.env.*', '*.xlsx', '*.xls'],
-    },
-  },
 });

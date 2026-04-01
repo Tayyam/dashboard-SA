@@ -198,6 +198,15 @@ function emptyToNull(s: string): string | null {
   return t ? t : null;
 }
 
+/** قيمة نصية لأعمدة NOT NULL — تجنّب الفراغ في القاعدة */
+function nonEmptyText(primary: string, ...alternates: string[]): string {
+  for (const s of [primary, ...alternates]) {
+    const t = s?.trim();
+    if (t) return t;
+  }
+  return '-';
+}
+
 /**
  * صف الإدراج: لا نرسل `null` لحقول قد تكون NOT NULL في قاعدتك — نستخدم سلاسل/تواريخ احتياطية.
  * حقول اختيارية حقاً تُحذف لاحقاً بـ stripNullInsertFields إن رغبت.
@@ -219,8 +228,8 @@ export function pilgrimToDbInsert(p: Pilgrim): Record<string, unknown> {
     nationality: emptyToNull(p.nationality),
     package_id: p.package_id?.trim() || '-',
     package: p.package?.trim() || '-',
-    arrival_city: emptyToNull(p.arrival_city),
-    departure_city: emptyToNull(p.departure_city),
+    arrival_city: nonEmptyText(p.arrival_city, p.first_entry_place, p.arrival_airport),
+    departure_city: nonEmptyText(p.departure_city, p.last_exit_place, p.departure_airport),
     arrival_hotel: emptyToNull(p.arrival_hotel),
     arrival_hotel_location: emptyToNull(p.arrival_hotel_location),
     departure_hotel: emptyToNull(p.departure_hotel),

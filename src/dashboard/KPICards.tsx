@@ -10,8 +10,6 @@ interface KPICardsProps {
   madinahRooms: RoomBreakdown;
 }
 
-const TOTAL_PILGRIMS_CAPACITY = 4020;
-
 function RoomCard({
   city,
   rooms,
@@ -53,11 +51,7 @@ export function KPICards({ totalPilgrims, makkahRooms, madinahRooms }: KPICardsP
           <span className="kpi-marker" />
           <span className="kpi-label">إجمالي الحجاج</span>
         </div>
-        <div className="kpi-value">
-          {/* {TOTAL_PILGRIMS_CAPACITY.toLocaleString()} */}
-          {totalPilgrims.toLocaleString()}/{TOTAL_PILGRIMS_CAPACITY.toLocaleString()}
-
-        </div>
+        <div className="kpi-value">{totalPilgrims.toLocaleString()}</div>
       </div>
       <RoomCard city="مكة" rooms={makkahRooms} />
       <RoomCard city="المدينة" rooms={madinahRooms} />

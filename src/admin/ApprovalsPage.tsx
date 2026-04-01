@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../core/supabaseClient';
 import type { UserProfileRow } from '../core/authAccess';
-import { pilgrimFromRow, pilgrimToDbInsert } from '../core/pilgrimFromRow';
+import { pilgrimFromRow, pilgrimToDbInsert, stripNullInsertFields } from '../core/pilgrimFromRow';
 import * as XLSX from 'xlsx';
 
 interface ApprovalsPageProps {
@@ -85,6 +85,16 @@ const STATUS_CLASS: Record<AccountStatus, string> = {
   approved: 'badge-approved',
   rejected: 'badge-rejected',
 };
+
+function formatSupabaseError(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (err && typeof err === 'object') {
+    const e = err as { message?: string; details?: string; hint?: string };
+    const parts = [e.message, e.details, e.hint].filter((x) => typeof x === 'string' && x.trim());
+    if (parts.length) return parts.join(' — ');
+  }
+  return 'فشل رفع ملف الحجاج.';
+}
 
 const isMissingGroupIdColumnError = (err: unknown): boolean => {
   if (!err || typeof err !== 'object') return false;
@@ -393,7 +403,7 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
       }
 
       const pilgrimsPayload = dataRows.map((row, idx) =>
-        pilgrimToDbInsert(pilgrimFromRow(row, idx))
+        stripNullInsertFields(pilgrimToDbInsert(pilgrimFromRow(row, idx)))
       );
 
       // Keep one row per nusuk_id (id) to avoid PK collisions during import.
@@ -439,7 +449,7 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
           : `تم تحديث جدول الحجاج بنجاح (${dedupedPilgrimsPayload.length.toLocaleString()} سجل).`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'فشل رفع ملف الحجاج.');
+      setError(formatSupabaseError(err));
     } finally {
       setUploadingPilgrims(false);
     }

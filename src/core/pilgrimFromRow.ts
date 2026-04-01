@@ -181,53 +181,89 @@ export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pil
   };
 }
 
-/** Row shape for `pilgrims` insert (Postgres date columns as string | null) */
+/** Placeholder when Excel/DB expects NOT NULL but القيمة ناقصة — يفضّل تصحيح الملف لاحقاً */
+const DATE_FALLBACK = '1900-01-01';
+
+/** تاريخ صالح لـ Postgres أو قيمة احتياطية (يتجنّب 23502 NOT NULL) */
+function coerceDbDate(primary: string, ...alternates: string[]): string {
+  for (const s of [primary, ...alternates]) {
+    const v = toDbDate(s);
+    if (v) return v;
+  }
+  return DATE_FALLBACK;
+}
+
+function emptyToNull(s: string): string | null {
+  const t = s?.trim();
+  return t ? t : null;
+}
+
+/**
+ * صف الإدراج: لا نرسل `null` لحقول قد تكون NOT NULL في قاعدتك — نستخدم سلاسل/تواريخ احتياطية.
+ * حقول اختيارية حقاً تُحذف لاحقاً بـ stripNullInsertFields إن رغبت.
+ */
 export function pilgrimToDbInsert(p: Pilgrim): Record<string, unknown> {
-  const d = (s: string) => toDbDate(s);
+  const arrival = coerceDbDate(p.arrival_date, p.first_stop_check_in);
+  const departure = coerceDbDate(p.departure_date, p.third_stop_check_out, p.second_stop_check_out, arrival);
+
   return {
     id: p.id,
-    group_id: p.group_id || null,
-    booking_id: p.booking_id,
+    group_id: p.group_id?.trim() || '-',
+    booking_id: p.booking_id?.trim() || String(p.id),
     gender: p.gender,
-    name: p.name,
-    birth_date: d(p.birth_date),
+    name: p.name?.trim() || '(بدون اسم)',
+    birth_date: coerceDbDate(p.birth_date),
     age: p.age,
-    guide_name: p.guide_name || null,
-    residence_country: p.residence_country || null,
-    nationality: p.nationality || null,
-    package_id: p.package_id || null,
-    package: p.package || null,
-    arrival_city: p.arrival_city || null,
-    departure_city: p.departure_city || null,
-    arrival_hotel: p.arrival_hotel || null,
-    arrival_hotel_location: p.arrival_hotel_location || null,
-    departure_hotel: p.departure_hotel || null,
-    departure_hotel_location: p.departure_hotel_location || null,
-    arrival_date: d(p.arrival_date),
-    arrival_hotel_checkout_date: d(p.arrival_hotel_checkout_date),
-    departure_city_arrival_date: d(p.departure_city_arrival_date),
-    departure_hotel_checkout_date: d(p.departure_hotel_checkout_date),
-    departure_date: d(p.departure_date),
-    visa_status: p.visa_status || null,
+    guide_name: emptyToNull(p.guide_name),
+    residence_country: emptyToNull(p.residence_country),
+    nationality: emptyToNull(p.nationality),
+    package_id: p.package_id?.trim() || '-',
+    package: p.package?.trim() || '-',
+    arrival_city: emptyToNull(p.arrival_city),
+    departure_city: emptyToNull(p.departure_city),
+    arrival_hotel: emptyToNull(p.arrival_hotel),
+    arrival_hotel_location: emptyToNull(p.arrival_hotel_location),
+    departure_hotel: emptyToNull(p.departure_hotel),
+    departure_hotel_location: emptyToNull(p.departure_hotel_location),
+    arrival_date: arrival,
+    arrival_hotel_checkout_date: coerceDbDate(p.arrival_hotel_checkout_date, p.first_stop_check_out, arrival),
+    departure_city_arrival_date: coerceDbDate(p.departure_city_arrival_date, p.second_stop_check_in, arrival),
+    departure_hotel_checkout_date: coerceDbDate(
+      p.departure_hotel_checkout_date,
+      p.third_stop_check_out,
+      p.second_stop_check_out,
+      departure
+    ),
+    departure_date: departure,
+    visa_status: p.visa_status?.trim() || '-',
     inside_kingdom: p.inside_kingdom,
     makkah_room_type: p.makkah_room_type,
     madinah_room_type: p.madinah_room_type,
     flight_contract_type: p.flight_contract_type,
-    first_stop_name: p.first_stop_name || null,
-    first_stop_location: p.first_stop_location || null,
-    first_stop_check_in: d(p.first_stop_check_in),
-    first_stop_check_out: d(p.first_stop_check_out),
-    second_stop_name: p.second_stop_name || null,
-    second_stop_location: p.second_stop_location || null,
-    second_stop_check_in: d(p.second_stop_check_in),
-    second_stop_check_out: d(p.second_stop_check_out),
-    third_stop_name: p.third_stop_name || null,
-    third_stop_location: p.third_stop_location || null,
-    third_stop_check_in: d(p.third_stop_check_in),
-    third_stop_check_out: d(p.third_stop_check_out),
-    first_entry_place: p.first_entry_place || null,
-    arrival_airport: p.arrival_airport || null,
-    last_exit_place: p.last_exit_place || null,
-    departure_airport: p.departure_airport || null,
+    first_stop_name: emptyToNull(p.first_stop_name),
+    first_stop_location: emptyToNull(p.first_stop_location),
+    first_stop_check_in: coerceDbDate(p.first_stop_check_in, arrival),
+    first_stop_check_out: coerceDbDate(p.first_stop_check_out, p.arrival_hotel_checkout_date, arrival),
+    second_stop_name: emptyToNull(p.second_stop_name),
+    second_stop_location: emptyToNull(p.second_stop_location),
+    second_stop_check_in: coerceDbDate(p.second_stop_check_in, p.departure_city_arrival_date, arrival),
+    second_stop_check_out: coerceDbDate(p.second_stop_check_out, p.departure_hotel_checkout_date, departure),
+    third_stop_name: emptyToNull(p.third_stop_name),
+    third_stop_location: emptyToNull(p.third_stop_location),
+    third_stop_check_in: coerceDbDate(p.third_stop_check_in, p.second_stop_check_out, arrival),
+    third_stop_check_out: coerceDbDate(p.third_stop_check_out, p.departure_hotel_checkout_date, departure),
+    first_entry_place: emptyToNull(p.first_entry_place),
+    arrival_airport: emptyToNull(p.arrival_airport),
+    last_exit_place: emptyToNull(p.last_exit_place),
+    departure_airport: emptyToNull(p.departure_airport),
   };
+}
+
+/** إزالة المفاتيح ذات القيمة null حتى يستخدم Postgres DEFAULT حيث وُجد */
+export function stripNullInsertFields(row: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (v !== null && v !== undefined) out[k] = v;
+  }
+  return out;
 }

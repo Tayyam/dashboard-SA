@@ -18,24 +18,26 @@ type StageField =
   | 'package'
   | 'arrival_date'
   | 'arrival_city'
-  | 'arrival_hotel'
-  | 'arrival_hotel_checkout_date'
+  | 'first_stop_name'
+  | 'first_stop_check_out'
+  | 'second_stop_name'
+  | 'second_stop_check_out'
+  | 'third_stop_name'
+  | 'third_stop_check_out'
   | 'departure_city'
-  | 'departure_city_arrival_date'
-  | 'departure_hotel'
-  | 'departure_hotel_checkout_date'
   | 'departure_date';
 
 type NodeFilterKey =
   | 'node_package'
   | 'node_arrival_date'
   | 'node_arrival_city'
-  | 'node_arrival_hotel'
-  | 'node_arrival_hotel_checkout_date'
+  | 'node_first_stop_name'
+  | 'node_first_stop_check_out'
+  | 'node_second_stop_name'
+  | 'node_second_stop_check_out'
+  | 'node_third_stop_name'
+  | 'node_third_stop_check_out'
   | 'node_departure_city'
-  | 'node_departure_city_arrival_date'
-  | 'node_departure_hotel'
-  | 'node_departure_hotel_checkout_date'
   | 'node_departure_date';
 
 interface StageDef {
@@ -137,12 +139,13 @@ export function JourneyFlow() {
     packageData,
     arrivalDateData,
     arrivalCityData,
-    arrivalHotelData,
-    arrivalHotelCheckoutDateData,
+    firstStopNameData,
+    firstStopCheckOutData,
+    secondStopNameData,
+    secondStopCheckOutData,
+    thirdStopNameData,
+    thirdStopCheckOutData,
     departureCityData,
-    departureCityArrivalDateData,
-    departureHotelData,
-    departureHotelCheckoutDateData,
     departureDateData,
   } = useJourneyData();
 
@@ -223,20 +226,58 @@ export function JourneyFlow() {
       data: getStableStageItems('arrival_city', 'node_arrival_city', arrivalCityData, 6),
     },
     {
-      title: 'فندق الوصول',
-      field: 'arrival_hotel',
-      filterKey: 'node_arrival_hotel',
-      data: getStableStageItems('arrival_hotel', 'node_arrival_hotel', arrivalHotelData, 7),
+      title: 'التوقف 1',
+      field: 'first_stop_name',
+      filterKey: 'node_first_stop_name',
+      data: getStableStageItems('first_stop_name', 'node_first_stop_name', firstStopNameData, 7),
     },
     {
-      title: 'مغادرة فندق الوصول',
-      field: 'arrival_hotel_checkout_date',
-      filterKey: 'node_arrival_hotel_checkout_date',
+      title: 'مغادرة 1',
+      field: 'first_stop_check_out',
+      filterKey: 'node_first_stop_check_out',
       isDate: true,
       data: getStableStageItems(
-        'arrival_hotel_checkout_date',
-        'node_arrival_hotel_checkout_date',
-        arrivalHotelCheckoutDateData,
+        'first_stop_check_out',
+        'node_first_stop_check_out',
+        firstStopCheckOutData,
+        7,
+        true
+      ),
+    },
+    {
+      title: 'التوقف 2',
+      field: 'second_stop_name',
+      filterKey: 'node_second_stop_name',
+      data: getStableStageItems('second_stop_name', 'node_second_stop_name', secondStopNameData, 7),
+    },
+    {
+      title: 'مغادرة 2',
+      field: 'second_stop_check_out',
+      filterKey: 'node_second_stop_check_out',
+      isDate: true,
+      data: getStableStageItems(
+        'second_stop_check_out',
+        'node_second_stop_check_out',
+        secondStopCheckOutData,
+        7,
+        true
+      ),
+    },
+    {
+      title: 'التوقف 3',
+      field: 'third_stop_name',
+      filterKey: 'node_third_stop_name',
+      data: getStableStageItems('third_stop_name', 'node_third_stop_name', thirdStopNameData, 7),
+    },
+    {
+      title: 'مغادرة 3',
+      field: 'third_stop_check_out',
+      filterKey: 'node_third_stop_check_out',
+      isDate: true,
+      data: getStableStageItems(
+        'third_stop_check_out',
+        'node_third_stop_check_out',
+        thirdStopCheckOutData,
         7,
         true
       ),
@@ -246,38 +287,6 @@ export function JourneyFlow() {
       field: 'departure_city',
       filterKey: 'node_departure_city',
       data: getStableStageItems('departure_city', 'node_departure_city', departureCityData, 6),
-    },
-    {
-      title: 'وصول مدينة المغادرة',
-      field: 'departure_city_arrival_date',
-      filterKey: 'node_departure_city_arrival_date',
-      isDate: true,
-      data: getStableStageItems(
-        'departure_city_arrival_date',
-        'node_departure_city_arrival_date',
-        departureCityArrivalDateData,
-        7,
-        true
-      ),
-    },
-    {
-      title: 'فندق المغادرة',
-      field: 'departure_hotel',
-      filterKey: 'node_departure_hotel',
-      data: getStableStageItems('departure_hotel', 'node_departure_hotel', departureHotelData, 7),
-    },
-    {
-      title: 'مغادرة الفندق',
-      field: 'departure_hotel_checkout_date',
-      filterKey: 'node_departure_hotel_checkout_date',
-      isDate: true,
-      data: getStableStageItems(
-        'departure_hotel_checkout_date',
-        'node_departure_hotel_checkout_date',
-        departureHotelCheckoutDateData,
-        7,
-        true
-      ),
     },
     {
       title: 'تاريخ المغادرة',
@@ -296,7 +305,7 @@ export function JourneyFlow() {
   const stageMaxCount = Math.max(...stages.map((s) => s.data.length), 1);
   const contentWidth = Math.max(920, stageMaxCount * colGap + contentPad * 2);
   const svgWidth = headerColWidth + contentWidth + 40;
-  const svgHeight = Math.max(820, firstStageY + stages.length * rowGap + 120);
+  const svgHeight = Math.max(900, firstStageY + stages.length * rowGap + 120);
 
   const rootX = headerColWidth + contentWidth / 2;
   const rootY = 64;
@@ -539,7 +548,10 @@ export function JourneyFlow() {
               )}
               <circle cx="0" cy="0" r="40" className="journey-node-circle" />
               {(() => {
-                const isHotelNode = n.field === 'arrival_hotel' || n.field === 'departure_hotel';
+                const isHotelNode =
+                  n.field === 'first_stop_name' ||
+                  n.field === 'second_stop_name' ||
+                  n.field === 'third_stop_name';
                 const lines = n.isDate
                   ? [fmtDateDdMm(n.label)]
                   : isHotelNode

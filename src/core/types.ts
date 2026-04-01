@@ -17,6 +17,23 @@ export interface Pilgrim {
   arrival_hotel_location: string;
   departure_hotel: string;
   departure_hotel_location: string;
+  /** ثلاث نقاط توقف (فندق أو منى/مزدلفة …) — تُملأ من الملف الجديد؛ تُشتق منها حقول الفنادق أعلاه للتوافق */
+  first_stop_name: string;
+  first_stop_location: string;
+  first_stop_check_in: string;
+  first_stop_check_out: string;
+  second_stop_name: string;
+  second_stop_location: string;
+  second_stop_check_in: string;
+  second_stop_check_out: string;
+  third_stop_name: string;
+  third_stop_location: string;
+  third_stop_check_in: string;
+  third_stop_check_out: string;
+  first_entry_place: string;
+  arrival_airport: string;
+  last_exit_place: string;
+  departure_airport: string;
   arrival_date: string;                  // YYYY-MM-DD
   arrival_hotel_checkout_date: string;   // YYYY-MM-DD
   departure_city_arrival_date: string;   // YYYY-MM-DD
@@ -48,6 +65,7 @@ export interface Filters {
   chart_departure_date: string | null;
   chart_arrival_hotel: string | null;
   chart_departure_hotel: string | null;
+  chart_third_stop: string | null;
   chart_nationality: string | null;
   chart_package: string | null;
   chart_age_bucket: string | null;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../core/supabaseClient';
 import type { UserProfileRow } from '../core/authAccess';
+import { pilgrimFromRow, pilgrimToDbInsert } from '../core/pilgrimFromRow';
 import * as XLSX from 'xlsx';
 
 interface ApprovalsPageProps {
@@ -52,6 +53,22 @@ const PILGRIMS_COLUMNS = [
   'makkah_room_type',
   'madinah_room_type',
   'flight_contract_type',
+  'first_stop_name',
+  'first_stop_location',
+  'first_stop_check_in',
+  'first_stop_check_out',
+  'second_stop_name',
+  'second_stop_location',
+  'second_stop_check_in',
+  'second_stop_check_out',
+  'third_stop_name',
+  'third_stop_location',
+  'third_stop_check_in',
+  'third_stop_check_out',
+  'first_entry_place',
+  'arrival_airport',
+  'last_exit_place',
+  'departure_airport',
   'created_at',
   'updated_at',
 ] as const;
@@ -69,20 +86,6 @@ const STATUS_CLASS: Record<AccountStatus, string> = {
   rejected: 'badge-rejected',
 };
 
-function toISODate(val: unknown): string {
-  if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) return val.slice(0, 10);
-  if (typeof val === 'number') {
-    const ms = Math.round((val - 25569) * 86400_000);
-    return new Date(ms).toISOString().slice(0, 10);
-  }
-  return '';
-}
-
-const toText = (val: unknown): string => (val == null ? '' : String(val).trim());
-const toDbDate = (val: unknown): string | null => {
-  const d = toISODate(val);
-  return d || null;
-};
 const isMissingGroupIdColumnError = (err: unknown): boolean => {
   if (!err || typeof err !== 'object') return false;
   const maybe = err as { code?: string; message?: string };
@@ -91,12 +94,6 @@ const isMissingGroupIdColumnError = (err: unknown): boolean => {
     (maybe.code === 'PGRST204' && msg.includes("'group_id'")) ||
     (maybe.code === '42703' && msg.includes('group_id'))
   );
-};
-
-const asNumberId = (val: unknown, fallback: number): number => {
-  const n = Number(String(val ?? '').trim());
-  if (Number.isFinite(n) && n > 0) return n;
-  return fallback;
 };
 
 export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
@@ -395,47 +392,16 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
         throw new Error('Sheet main فارغة ولا تحتوي على بيانات.');
       }
 
-      const pilgrimsPayload = dataRows.map((row, idx) => {
-        const contractRaw = toText(row.Flight_contract_type).toUpperCase();
-        const genderRaw = toText(row.gender).toLowerCase();
-        const insideRaw = toText(row.inside_kingdom).toLowerCase();
-        const idSource = toText(row.nusuk_id) || toText(row.Booking_ID);
-
-        return {
-          id: asNumberId(idSource, idx + 1),
-          group_id: toText(row.group_id),
-          booking_id: idSource || `SV-${idx + 1}`,
-          gender: genderRaw === 'male' ? 'Male' : 'Female',
-          name: toText(row.name),
-          birth_date: toDbDate(row.birth_date),
-          age: Number(row.Age ?? 0),
-          guide_name: toText(row.guide_name),
-          residence_country: toText(row.residence_country),
-          nationality: toText(row.nationality),
-          package_id: toText(row.package_id),
-          package: toText(row.package_name),
-          arrival_city: toText(row.Dep_Destination),
-          departure_city: toText(row.Ret_Origin),
-          arrival_hotel: toText(row['packages.first_hotel_name']),
-          arrival_hotel_location: toText(row['packages.first_hotel_location']),
-          departure_hotel: toText(row.last_hotel_name),
-          departure_hotel_location: toText(row['packages.second_hotel_location']),
-          arrival_date: toDbDate(row.Dep_Arr_Date),
-          arrival_hotel_checkout_date: toDbDate(row['packages.first_hotel_check_out']),
-          departure_city_arrival_date: toDbDate(row.last_hotel_check_in),
-          departure_hotel_checkout_date: toDbDate(row.last_hotel_check_out),
-          departure_date: toDbDate(row.Ret_Date),
-          visa_status: toText(row.visa_status),
-          inside_kingdom: insideRaw === 'true' || insideRaw === '1' || insideRaw === 'yes' || insideRaw === 'نعم',
-          makkah_room_type: 'triple',
-          madinah_room_type: 'triple',
-          flight_contract_type: contractRaw === 'B2B' ? 'B2B' : 'GDS',
-        };
-      });
+      const pilgrimsPayload = dataRows.map((row, idx) =>
+        pilgrimToDbInsert(pilgrimFromRow(row, idx))
+      );
 
       // Keep one row per nusuk_id (id) to avoid PK collisions during import.
       const dedupedMap = new Map<number, (typeof pilgrimsPayload)[number]>();
-      for (const row of pilgrimsPayload) dedupedMap.set(row.id, row);
+      for (const row of pilgrimsPayload) {
+        const id = typeof row.id === 'number' ? row.id : Number(row.id);
+        if (Number.isFinite(id)) dedupedMap.set(id, row);
+      }
       const dedupedPilgrimsPayload = Array.from(dedupedMap.values());
 
       // PostgREST requires a WHERE clause for DELETE in this project setup.

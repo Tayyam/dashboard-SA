@@ -42,6 +42,7 @@ function ActiveFilterBadges() {
     'chart_departure_date',
     'chart_arrival_hotel',
     'chart_departure_hotel',
+    'chart_third_stop',
     'chart_nationality',
     'chart_package',
     'chart_age_bucket',
@@ -55,8 +56,9 @@ function ActiveFilterBadges() {
     chart_visa_status: 'حالة التأشيرة',
     chart_arrival_date: 'تاريخ الوصول',
     chart_departure_date: 'تاريخ المغادرة',
-    chart_arrival_hotel: 'فندق الوصول',
-    chart_departure_hotel: 'فندق المغادرة',
+    chart_arrival_hotel: 'التوقف 1',
+    chart_departure_hotel: 'التوقف 2',
+    chart_third_stop: 'التوقف 3',
     chart_nationality: 'الجنسية',
     chart_package: 'الباقة',
     chart_age_bucket: 'العمر',
@@ -176,6 +178,7 @@ export default function App() {
     departureDateData,
     arrivalHotelData,
     departureHotelData,
+    thirdStopData,
     nationalityData,
     packageData,
     ageData,
@@ -447,9 +450,9 @@ export default function App() {
               </ChartWrapper>
             </div>
 
-            {/* Row 4: Arrival Hotel + Departure Hotel */}
+            {/* Row 4: ثلاث نقاط توقف (فندق / منى …) */}
             <div className="chart-span-2">
-              <ChartWrapper title="عدد الحجاج حسب فندق الوصول" height={260}>
+              <ChartWrapper title="عدد الحجاج حسب التوقف الأول" height={260}>
                 <BarChart
                   data={arrivalHotelData}
                   onSegmentClick={(v) => toggleChart('chart_arrival_hotel', v)}
@@ -460,10 +463,21 @@ export default function App() {
             </div>
 
             <div className="chart-span-2">
-              <ChartWrapper title="عدد الحجاج حسب فندق المغادرة" height={260}>
+              <ChartWrapper title="عدد الحجاج حسب التوقف الثاني" height={260}>
                 <BarChart
                   data={departureHotelData}
                   onSegmentClick={(v) => toggleChart('chart_departure_hotel', v)}
+                  layout="vertical"
+                  maxLabelLen={18}
+                />
+              </ChartWrapper>
+            </div>
+
+            <div className="chart-span-2">
+              <ChartWrapper title="عدد الحجاج حسب التوقف الثالث" height={260}>
+                <BarChart
+                  data={thirdStopData}
+                  onSegmentClick={(v) => toggleChart('chart_third_stop', v)}
                   layout="vertical"
                   maxLabelLen={18}
                 />

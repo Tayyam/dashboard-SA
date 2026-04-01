@@ -19,6 +19,7 @@ const EMPTY_FILTERS: Filters = {
   chart_departure_date: null,
   chart_arrival_hotel: null,
   chart_departure_hotel: null,
+  chart_third_stop: null,
   chart_nationality: null,
   chart_package: null,
   chart_age_bucket: null,

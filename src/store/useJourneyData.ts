@@ -51,40 +51,46 @@ export function useJourneyData() {
     return toJourneyPoints(agg, filters.node_arrival_city);
   }, [filters, data]);
 
-  const arrivalHotelData = useMemo(() => {
-    const stageData = withoutNodeFilter('node_arrival_hotel');
-    const agg = aggregate(groupBy(stageData, 'arrival_hotel'), 'count');
-    return toJourneyPoints(agg, filters.node_arrival_hotel);
+  const firstStopNameData = useMemo(() => {
+    const stageData = withoutNodeFilter('node_first_stop_name');
+    const agg = aggregate(groupBy(stageData, 'first_stop_name'), 'count');
+    return toJourneyPoints(agg, filters.node_first_stop_name);
   }, [filters, data]);
 
-  const arrivalHotelCheckoutDateData = useMemo(() => {
-    const stageData = withoutNodeFilter('node_arrival_hotel_checkout_date');
-    const agg = aggregate(groupBy(stageData, 'arrival_hotel_checkout_date'), 'count');
-    return toJourneyPoints(agg, filters.node_arrival_hotel_checkout_date, true);
+  const firstStopCheckOutData = useMemo(() => {
+    const stageData = withoutNodeFilter('node_first_stop_check_out');
+    const agg = aggregate(groupBy(stageData, 'first_stop_check_out'), 'count');
+    return toJourneyPoints(agg, filters.node_first_stop_check_out, true);
+  }, [filters, data]);
+
+  const secondStopNameData = useMemo(() => {
+    const stageData = withoutNodeFilter('node_second_stop_name');
+    const agg = aggregate(groupBy(stageData, 'second_stop_name'), 'count');
+    return toJourneyPoints(agg, filters.node_second_stop_name);
+  }, [filters, data]);
+
+  const secondStopCheckOutData = useMemo(() => {
+    const stageData = withoutNodeFilter('node_second_stop_check_out');
+    const agg = aggregate(groupBy(stageData, 'second_stop_check_out'), 'count');
+    return toJourneyPoints(agg, filters.node_second_stop_check_out, true);
+  }, [filters, data]);
+
+  const thirdStopNameData = useMemo(() => {
+    const stageData = withoutNodeFilter('node_third_stop_name');
+    const agg = aggregate(groupBy(stageData, 'third_stop_name'), 'count');
+    return toJourneyPoints(agg, filters.node_third_stop_name);
+  }, [filters, data]);
+
+  const thirdStopCheckOutData = useMemo(() => {
+    const stageData = withoutNodeFilter('node_third_stop_check_out');
+    const agg = aggregate(groupBy(stageData, 'third_stop_check_out'), 'count');
+    return toJourneyPoints(agg, filters.node_third_stop_check_out, true);
   }, [filters, data]);
 
   const departureCityData = useMemo(() => {
     const stageData = withoutNodeFilter('node_departure_city');
     const agg = aggregate(groupBy(stageData, 'departure_city'), 'count');
     return toJourneyPoints(agg, filters.node_departure_city);
-  }, [filters, data]);
-
-  const departureCityArrivalDateData = useMemo(() => {
-    const stageData = withoutNodeFilter('node_departure_city_arrival_date');
-    const agg = aggregate(groupBy(stageData, 'departure_city_arrival_date'), 'count');
-    return toJourneyPoints(agg, filters.node_departure_city_arrival_date, true);
-  }, [filters, data]);
-
-  const departureHotelData = useMemo(() => {
-    const stageData = withoutNodeFilter('node_departure_hotel');
-    const agg = aggregate(groupBy(stageData, 'departure_hotel'), 'count');
-    return toJourneyPoints(agg, filters.node_departure_hotel);
-  }, [filters, data]);
-
-  const departureHotelCheckoutDateData = useMemo(() => {
-    const stageData = withoutNodeFilter('node_departure_hotel_checkout_date');
-    const agg = aggregate(groupBy(stageData, 'departure_hotel_checkout_date'), 'count');
-    return toJourneyPoints(agg, filters.node_departure_hotel_checkout_date, true);
   }, [filters, data]);
 
   const departureDateData = useMemo(() => {
@@ -99,12 +105,13 @@ export function useJourneyData() {
     packageData,
     arrivalDateData,
     arrivalCityData,
-    arrivalHotelData,
-    arrivalHotelCheckoutDateData,
+    firstStopNameData,
+    firstStopCheckOutData,
+    secondStopNameData,
+    secondStopCheckOutData,
+    thirdStopNameData,
+    thirdStopCheckOutData,
     departureCityData,
-    departureCityArrivalDateData,
-    departureHotelData,
-    departureHotelCheckoutDateData,
     departureDateData,
   };
 }

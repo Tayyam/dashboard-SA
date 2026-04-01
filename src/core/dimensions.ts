@@ -5,6 +5,7 @@ export const DIMENSIONS = {
   DEPARTURE_DATE: 'departure_date',
   ARRIVAL_HOTEL: 'arrival_hotel',
   DEPARTURE_HOTEL: 'departure_hotel',
+  THIRD_STOP_NAME: 'third_stop_name',
   NATIONALITY: 'nationality',
   PACKAGE: 'package',
   AGE_BUCKET: 'age_bucket',

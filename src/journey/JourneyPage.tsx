@@ -7,14 +7,15 @@ import type { JourneyFilters } from '../core/journeyFilterEngine';
 
 const NODE_LABELS: Partial<Record<keyof JourneyFilters, string>> = {
   node_package: 'الباقة',
-  node_arrival_date:  'تاريخ الوصول',
-  node_arrival_city:  'مدينة الوصول',
-  node_arrival_hotel: 'فندق الوصول',
-  node_arrival_hotel_checkout_date: 'تاريخ مغادرة فندق الوصول',
+  node_arrival_date: 'تاريخ الوصول',
+  node_arrival_city: 'مدينة الوصول',
+  node_first_stop_name: 'التوقف 1',
+  node_first_stop_check_out: 'مغادرة 1',
+  node_second_stop_name: 'التوقف 2',
+  node_second_stop_check_out: 'مغادرة 2',
+  node_third_stop_name: 'التوقف 3',
+  node_third_stop_check_out: 'مغادرة 3',
   node_departure_city: 'مدينة المغادرة',
-  node_departure_city_arrival_date: 'تاريخ وصول مدينة المغادرة',
-  node_departure_hotel: 'فندق المغادرة',
-  node_departure_hotel_checkout_date: 'تاريخ مغادرة الفندق',
   node_departure_date: 'تاريخ المغادرة',
 };
 

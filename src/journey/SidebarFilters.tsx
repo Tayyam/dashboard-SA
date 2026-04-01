@@ -132,19 +132,24 @@ export function JourneySidebarFilters() {
           options={unique(data.map((p) => p.arrival_city))}
         />
         <SelectFilter
-          label="فندق الوصول"
-          filterKey="dropdown_arrival_hotel"
-          options={unique(data.map((p) => p.arrival_hotel))}
+          label="التوقف 1 (اسم)"
+          filterKey="dropdown_first_stop"
+          options={unique(data.map((p) => p.first_stop_name))}
+        />
+        <SelectFilter
+          label="التوقف 2 (اسم)"
+          filterKey="dropdown_second_stop"
+          options={unique(data.map((p) => p.second_stop_name))}
+        />
+        <SelectFilter
+          label="التوقف 3 (اسم)"
+          filterKey="dropdown_third_stop"
+          options={unique(data.map((p) => p.third_stop_name))}
         />
         <SelectFilter
           label="مدينة المغادرة"
           filterKey="dropdown_departure_city"
           options={unique(data.map((p) => p.departure_city))}
-        />
-        <SelectFilter
-          label="فندق المغادرة"
-          filterKey="dropdown_departure_hotel"
-          options={unique(data.map((p) => p.departure_hotel))}
         />
         <SelectFilter
           label="الجنس"

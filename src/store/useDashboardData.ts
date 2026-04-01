@@ -60,6 +60,11 @@ export function useDashboardData() {
     return toChartData(agg, filters.chart_departure_hotel);
   }, [filteredData, filters.chart_departure_hotel]);
 
+  const thirdStopData = useMemo(() => {
+    const agg = aggregate(groupBy(filteredData, DIMENSIONS.THIRD_STOP_NAME as never), 'count');
+    return toChartData(agg, filters.chart_third_stop);
+  }, [filteredData, filters.chart_third_stop]);
+
   const nationalityData = useMemo(() => {
     const agg   = aggregate(groupBy(filteredData, DIMENSIONS.NATIONALITY as never), 'count');
     const total = Object.values(agg).reduce((s, v) => s + v, 0);
@@ -103,6 +108,7 @@ export function useDashboardData() {
     departureDateData,
     arrivalHotelData,
     departureHotelData,
+    thirdStopData,
     nationalityData,
     packageData,
     ageData,

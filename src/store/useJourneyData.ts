@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { applyJourneyFilters, type JourneyFilters } from '../core/journeyFilterEngine';
-import { groupBy, aggregate } from '../core/aggregationEngine';
+import { groupBy, groupByThirdStopChart, aggregate } from '../core/aggregationEngine';
 import { useJourneyFilters } from './useJourneyFilters';
 import type { ChartDataPoint } from '../core/types';
 import { usePilgrimsData } from './usePilgrimsData';
@@ -77,7 +77,7 @@ export function useJourneyData() {
 
   const thirdStopNameData = useMemo(() => {
     const stageData = withoutNodeFilter('node_third_stop_name');
-    const agg = aggregate(groupBy(stageData, 'third_stop_name'), 'count');
+    const agg = aggregate(groupByThirdStopChart(stageData), 'count');
     return toJourneyPoints(agg, filters.node_third_stop_name);
   }, [filters, data]);
 

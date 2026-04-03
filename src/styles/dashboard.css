@@ -122,6 +122,45 @@
   gap: 14px;
 }
 
+/* صف المؤشرات: الأرقام بيضاء، عريضة، أكبر — على تدرج العلامة */
+.kpi-row .kpi-card {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.kpi-row .kpi-card:hover {
+  box-shadow: 0 6px 28px rgba(4, 106, 56, 0.38);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.kpi-row .kpi-label {
+  color: rgba(255, 255, 255, 0.88);
+}
+.kpi-row .kpi-marker {
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
+}
+.kpi-row .kpi-value {
+  color: #ffffff;
+  font-size: clamp(2.125rem, 4.2vw, 2.875rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.kpi-row .breakdown-item {
+  color: rgba(255, 255, 255, 0.88);
+}
+.kpi-row .breakdown-item strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+.kpi-row .dot-triple {
+  background: rgba(255, 255, 255, 0.95);
+}
+.kpi-row .dot-double {
+  background: #bfdbfe;
+}
+.kpi-row .dot-quad {
+  background: #fcd34d;
+}
+
 .kpi-card {
   background: var(--bg-card);
   border: 1px solid var(--border);

@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
 import { applyFilters } from '../core/filterEngine';
-import { groupBy, aggregate, toChartData, toSortedChartData } from '../core/aggregationEngine';
+import {
+  groupBy,
+  groupByThirdStopChart,
+  aggregate,
+  toChartData,
+  toSortedChartData,
+} from '../core/aggregationEngine';
 import { useFilters } from './useFilters';
 import { DIMENSIONS } from '../core/dimensions';
 import { usePilgrimsData } from './usePilgrimsData';
@@ -61,7 +67,7 @@ export function useDashboardData() {
   }, [filteredData, filters.chart_departure_hotel]);
 
   const thirdStopData = useMemo(() => {
-    const agg = aggregate(groupBy(filteredData, DIMENSIONS.THIRD_STOP_NAME as never), 'count');
+    const agg = aggregate(groupByThirdStopChart(filteredData), 'count');
     return toChartData(agg, filters.chart_third_stop);
   }, [filteredData, filters.chart_third_stop]);
 

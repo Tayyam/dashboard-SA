@@ -66,6 +66,14 @@ function roomType(raw: string): 'triple' | 'double' | 'quad' {
   return 'triple';
 }
 
+/** صف فيه مؤشرات وصول بالطائرة — بدونها لا نملأ مدينة الوصول من Dep_Destination ولا fallback من مطار/أول دخول */
+function rowHasInboundFlight(row: Record<string, unknown>): boolean {
+  if (pickStr(row, ['arrival_airport', 'مطار الوصول'])) return true;
+  if (toDbDate(row.Dep_Arr_Date)) return true;
+  if (pickStr(row, ['Dep_Destination'])) return true;
+  return false;
+}
+
 export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pilgrim {
   const groupIdRaw =
     row.group_id ?? row.groupId ?? row.groupid ?? row['group id'] ?? '';
@@ -80,7 +88,10 @@ export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pil
     pickStr(row, ['last_hotel_name']) ||
     toText(row.departure_hotel);
 
-  const third_stop_name = pickStr(row, ['third_stop_name']);
+  const third_stop_name =
+    pickStr(row, ['third_stop_name']) ||
+    pickStr(row, ['packages.third_hotel_name']) ||
+    pickStr(row, ['third_hotel_name']);
 
   const first_stop_location =
     pickStr(row, ['first_stop_location']) ||
@@ -92,7 +103,8 @@ export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pil
     pickStr(row, ['packages.second_hotel_location']) ||
     toText(row.departure_hotel_location);
 
-  const third_stop_location = pickStr(row, ['third_stop_location']);
+  const third_stop_location =
+    pickStr(row, ['third_stop_location']) || pickStr(row, ['packages.third_hotel_location']);
 
   const first_stop_check_in =
     toPilgrimDate(row.first_stop_check_in) ||
@@ -127,6 +139,11 @@ export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pil
 
   const contractRaw = toText(row.flight_contract_type ?? row.Flight_contract_type).toUpperCase();
 
+  const has_arrival_flight = rowHasInboundFlight(row);
+  const arrival_city = has_arrival_flight
+    ? pickStr(row, ['arrival_city', 'Dep_Destination'])
+    : pickStr(row, ['arrival_city']);
+
   const idSource =
     toText(row.nusuk_id) || toText(row.Booking_ID) || toText(row.booking_id) || '';
 
@@ -146,7 +163,7 @@ export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pil
     nationality: toText(row.nationality),
     package_id: pickStr(row, ['package_type', 'package_id']),
     package: pickStr(row, ['package_name', 'package']),
-    arrival_city: pickStr(row, ['arrival_city', 'Dep_Destination']),
+    arrival_city,
     departure_city: pickStr(row, ['departure_city', 'Ret_Origin']),
     arrival_hotel: first_stop_name,
     arrival_hotel_location: first_stop_location,
@@ -162,6 +179,7 @@ export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pil
     makkah_room_type: roomType(toText(row.makkah_room_type)),
     madinah_room_type: roomType(toText(row.madinah_room_type)),
     flight_contract_type: normalizeContract(contractRaw),
+    has_arrival_flight,
     first_stop_name,
     first_stop_location,
     first_stop_check_in,
@@ -228,7 +246,9 @@ export function pilgrimToDbInsert(p: Pilgrim): Record<string, unknown> {
     nationality: emptyToNull(p.nationality),
     package_id: p.package_id?.trim() || '-',
     package: p.package?.trim() || '-',
-    arrival_city: nonEmptyText(p.arrival_city, p.first_entry_place, p.arrival_airport),
+    arrival_city: p.has_arrival_flight
+      ? nonEmptyText(p.arrival_city, p.first_entry_place, p.arrival_airport)
+      : p.arrival_city?.trim() || '',
     departure_city: nonEmptyText(p.departure_city, p.last_exit_place, p.departure_airport),
     arrival_hotel: emptyToNull(p.arrival_hotel),
     arrival_hotel_location: emptyToNull(p.arrival_hotel_location),

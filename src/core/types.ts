@@ -44,6 +44,8 @@ export interface Pilgrim {
   makkah_room_type: 'triple' | 'double' | 'quad';
   madinah_room_type: 'triple' | 'double' | 'quad';
   flight_contract_type: 'B2B' | 'GDS';
+  /** true إذا كان الصف يحتوي حقول وصول جوي (مطار، Dep_Arr_Date، Dep_Destination) — يُستخدم لعدم اشتقاق مدينة الوصول من أماكن برية */
+  has_arrival_flight: boolean;
 }
 
 export interface Filters {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useJourneyData } from '../store/useJourneyData';
 import { useJourneyFilters } from '../store/useJourneyFilters';
 import type { Pilgrim } from '../core/types';
+import { thirdStopChartLabel } from '../core/aggregationEngine';
 
 interface LayerItem {
   label: string;
@@ -26,6 +27,11 @@ type StageField =
   | 'third_stop_check_out'
   | 'departure_city'
   | 'departure_date';
+
+function stageFieldValue(p: Pilgrim, field: StageField): string {
+  if (field === 'third_stop_name') return thirdStopChartLabel(p);
+  return String(p[field] ?? '');
+}
 
 type NodeFilterKey =
   | 'node_package'
@@ -123,8 +129,8 @@ function getPairCount(
 ) {
   const map = new Map<string, number>();
   for (const p of data) {
-    const a = p[fieldA] as string;
-    const b = p[fieldB] as string;
+    const a = stageFieldValue(p, fieldA);
+    const b = stageFieldValue(p, fieldB);
     if (!labelsA.has(a) || !labelsB.has(b)) continue;
     const key = `${a}|||${b}`;
     map.set(key, (map.get(key) ?? 0) + 1);

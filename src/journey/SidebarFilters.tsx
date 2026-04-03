@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useJourneyFilters } from '../store/useJourneyFilters';
+import { thirdStopChartLabel } from '../core/aggregationEngine';
 import { DateRangeSlider } from './DateRangeSlider';
 import type { JourneyFilters } from '../core/journeyFilterEngine';
 import { usePilgrimsData } from '../store/usePilgrimsData';
@@ -144,7 +145,7 @@ export function JourneySidebarFilters() {
         <SelectFilter
           label="التوقف 3 (اسم)"
           filterKey="dropdown_third_stop"
-          options={unique(data.map((p) => p.third_stop_name))}
+          options={unique(data.map((p) => thirdStopChartLabel(p)))}
         />
         <SelectFilter
           label="مدينة المغادرة"

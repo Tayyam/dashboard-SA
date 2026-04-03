@@ -1,4 +1,5 @@
 import type { Pilgrim, Filters } from './types';
+import { thirdStopChartLabel } from './aggregationEngine';
 
 export function applyFilters(data: Pilgrim[], filters: Filters): Pilgrim[] {
   return data.filter((p) => {
@@ -36,7 +37,7 @@ export function applyFilters(data: Pilgrim[], filters: Filters): Pilgrim[] {
     if (filters.chart_departure_date && p.departure_date !== filters.chart_departure_date) return false;
     if (filters.chart_arrival_hotel && p.first_stop_name !== filters.chart_arrival_hotel) return false;
     if (filters.chart_departure_hotel && p.second_stop_name !== filters.chart_departure_hotel) return false;
-    if (filters.chart_third_stop && p.third_stop_name !== filters.chart_third_stop) return false;
+    if (filters.chart_third_stop && thirdStopChartLabel(p) !== filters.chart_third_stop) return false;
     if (filters.chart_nationality && p.nationality !== filters.chart_nationality) return false;
     if (filters.chart_package && p.package !== filters.chart_package) return false;
     if (filters.chart_age_bucket) {

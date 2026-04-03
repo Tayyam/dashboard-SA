@@ -9,6 +9,11 @@ import {
   Cell,
 } from 'recharts';
 import type { ChartDataPoint } from '../core/types';
+import {
+  chartTooltipContentStyle,
+  chartTooltipItemStyle,
+  chartTooltipLabelStyle,
+} from './tooltipStyles';
 
 interface HistogramProps {
   data: ChartDataPoint[];
@@ -25,14 +30,6 @@ function getBarColor(index: number, total: number): string {
   const b = Math.round(56  + dist * (156 - 56));
   return `rgb(${r},${g},${b})`;
 }
-
-const tooltipStyle = {
-  background: '#1e293b',
-  border: '1px solid #046A38',
-  borderRadius: 8,
-  color: '#f8fafc',
-  fontSize: 12,
-};
 
 export function Histogram({ data, onSegmentClick }: HistogramProps) {
   const hasFilter = data.some((d) => !d.isSelected);
@@ -51,7 +48,12 @@ export function Histogram({ data, onSegmentClick }: HistogramProps) {
           interval={1}
         />
         <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(4,106,56,0.05)' }} />
+        <Tooltip
+          contentStyle={chartTooltipContentStyle}
+          labelStyle={chartTooltipLabelStyle}
+          itemStyle={chartTooltipItemStyle}
+          cursor={{ fill: 'rgba(4,106,56,0.05)' }}
+        />
         <Bar
           isAnimationActive
           animationDuration={220}

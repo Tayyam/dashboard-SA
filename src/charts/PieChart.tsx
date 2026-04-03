@@ -7,6 +7,11 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { ChartDataPoint } from '../core/types';
+import {
+  chartTooltipContentStyle,
+  chartTooltipItemStyle,
+  chartTooltipLabelStyle,
+} from './tooltipStyles';
 
 interface PieChartProps {
   data: ChartDataPoint[];
@@ -18,14 +23,6 @@ const SLICE_COLORS: Record<string, string> = {
   Female: '#2563eb',
 };
 const FALLBACK = ['#046A38', '#2563eb', '#d97706', '#7c3aed', '#dc2626'];
-
-const tooltipStyle = {
-  background: '#1e293b',
-  border: '1px solid #046A38',
-  borderRadius: 8,
-  color: '#f8fafc',
-  fontSize: 12,
-};
 
 const RADIAN = Math.PI / 180;
 
@@ -106,7 +103,9 @@ export function PieChart({ data, onSegmentClick }: PieChartProps) {
           })}
         </Pie>
         <Tooltip
-          contentStyle={tooltipStyle}
+          contentStyle={chartTooltipContentStyle}
+          labelStyle={chartTooltipLabelStyle}
+          itemStyle={chartTooltipItemStyle}
           formatter={(value, name) => {
             const formattedValue =
               typeof value === 'number' ? value.toLocaleString() : String(value ?? '');

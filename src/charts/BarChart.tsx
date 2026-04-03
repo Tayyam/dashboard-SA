@@ -9,6 +9,11 @@ import {
   Cell,
 } from 'recharts';
 import type { ChartDataPoint } from '../core/types';
+import {
+  chartTooltipContentStyle,
+  chartTooltipItemStyle,
+  chartTooltipLabelStyle,
+} from './tooltipStyles';
 
 interface BarChartProps {
   data: ChartDataPoint[];
@@ -25,14 +30,6 @@ const FADED       = '#c8dfd3';
 function truncate(str: string, max: number) {
   return str.length > max ? str.slice(0, max) + '…' : str;
 }
-
-const tooltipStyle = {
-  background: '#1e293b',
-  border: '1px solid #046A38',
-  borderRadius: 8,
-  color: '#f8fafc',
-  fontSize: 12,
-};
 
 export function BarChart({
   data,
@@ -81,7 +78,12 @@ export function BarChart({
             width={125}
             tickFormatter={(v) => truncate(String(v), maxLabelLen)}
           />
-          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(4,106,56,0.05)' }} />
+          <Tooltip
+            contentStyle={chartTooltipContentStyle}
+            labelStyle={chartTooltipLabelStyle}
+            itemStyle={chartTooltipItemStyle}
+            cursor={{ fill: 'rgba(4,106,56,0.05)' }}
+          />
           <Bar
             dataKey="value"
             radius={[0, 5, 5, 0]}
@@ -127,7 +129,12 @@ export function BarChart({
           axisLine={false}
           tickLine={false}
         />
-        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(4,106,56,0.05)' }} />
+        <Tooltip
+          contentStyle={chartTooltipContentStyle}
+          labelStyle={chartTooltipLabelStyle}
+          itemStyle={chartTooltipItemStyle}
+          cursor={{ fill: 'rgba(4,106,56,0.05)' }}
+        />
         <Bar
           dataKey="value"
           radius={[5, 5, 0, 0]}

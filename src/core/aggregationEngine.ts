@@ -10,6 +10,25 @@ function isBlankLabel(label: string): boolean {
   return BLANK_LABELS.has(label.trim());
 }
 
+/** تسمية مخطط «التوقف الثالث»: الاسم ثم الموقع (مثل توقف 1/2 مع first_stop_name + location) */
+export function thirdStopChartLabel(p: Pilgrim): string {
+  for (const s of [p.third_stop_name, p.third_stop_location]) {
+    const t = String(s ?? '').trim();
+    if (t && !isBlankLabel(t)) return t;
+  }
+  return '';
+}
+
+export function groupByThirdStopChart(data: Pilgrim[]): GroupedData {
+  return data.reduce<GroupedData>((acc, pilgrim) => {
+    const key = thirdStopChartLabel(pilgrim);
+    if (isBlankLabel(key)) return acc;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(pilgrim);
+    return acc;
+  }, {});
+}
+
 export function groupBy(data: Pilgrim[], dimension: Dimension): GroupedData {
   return data.reduce<GroupedData>((acc, pilgrim) => {
     const key =

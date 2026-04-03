@@ -1,4 +1,5 @@
 import type { Pilgrim } from './types';
+import { thirdStopChartLabel } from './aggregationEngine';
 
 export interface JourneyFilters {
   // Date range sliders
@@ -71,7 +72,7 @@ export function applyJourneyFilters(data: Pilgrim[], f: JourneyFilters): Pilgrim
     if (f.dropdown_departure_city && p.departure_city !== f.dropdown_departure_city) return false;
     if (f.dropdown_first_stop && p.first_stop_name !== f.dropdown_first_stop) return false;
     if (f.dropdown_second_stop && p.second_stop_name !== f.dropdown_second_stop) return false;
-    if (f.dropdown_third_stop && p.third_stop_name !== f.dropdown_third_stop) return false;
+    if (f.dropdown_third_stop && thirdStopChartLabel(p) !== f.dropdown_third_stop) return false;
     if (f.dropdown_gender && p.gender !== f.dropdown_gender) return false;
     if (f.dropdown_nationality && p.nationality !== f.dropdown_nationality) return false;
     if (f.dropdown_booking_id && p.booking_id !== f.dropdown_booking_id) return false;
@@ -99,7 +100,7 @@ export function applyJourneyFilters(data: Pilgrim[], f: JourneyFilters): Pilgrim
     if (f.node_first_stop_check_out && p.first_stop_check_out !== f.node_first_stop_check_out) return false;
     if (f.node_second_stop_name && p.second_stop_name !== f.node_second_stop_name) return false;
     if (f.node_second_stop_check_out && p.second_stop_check_out !== f.node_second_stop_check_out) return false;
-    if (f.node_third_stop_name && p.third_stop_name !== f.node_third_stop_name) return false;
+    if (f.node_third_stop_name && thirdStopChartLabel(p) !== f.node_third_stop_name) return false;
     if (f.node_third_stop_check_out && p.third_stop_check_out !== f.node_third_stop_check_out) return false;
     if (f.node_departure_city && p.departure_city !== f.node_departure_city) return false;
     if (f.node_departure_date && p.departure_date !== f.node_departure_date) return false;

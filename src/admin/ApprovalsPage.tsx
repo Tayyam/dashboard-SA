@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../core/supabaseClient';
+import { cn } from '../lib/cn';
 import type { UserProfileRow } from '../core/authAccess';
 import { pilgrimFromRow, pilgrimToDbInsert, stripNullInsertFields } from '../core/pilgrimFromRow';
 import * as XLSX from 'xlsx';
@@ -85,10 +86,10 @@ const STATUS_LABEL: Record<AccountStatus, string> = {
   rejected: 'مرفوض',
 };
 
-const STATUS_CLASS: Record<AccountStatus, string> = {
-  pending:  'badge-pending',
-  approved: 'badge-approved',
-  rejected: 'badge-rejected',
+const STATUS_BADGE_CLASS: Record<AccountStatus, string> = {
+  pending:  'bg-amber-100 text-amber-900 border-amber-200',
+  approved: 'bg-primary-pale text-primary-dark border-emerald-300',
+  rejected: 'bg-red-100 text-red-800 border-red-200',
 };
 
 function formatSupabaseError(err: unknown): string {
@@ -481,40 +482,43 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
   /* ── Render ────────────────────────────────────────────────────── */
   if (hasAdminAccess === false) {
     return (
-      <div className="admin-page">
-        <p className="approval-error">غير مصرح لك بالوصول إلى صفحة إدارة الحسابات.</p>
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-page px-6 pb-8 pt-5 rtl">
+        <p className="text-sm font-semibold text-red-700">غير مصرح لك بالوصول إلى صفحة إدارة الحسابات.</p>
       </div>
     );
   }
 
+  const refreshBtnClass =
+    'inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-primary-light bg-primary-pale px-3.5 py-1.5 font-sans text-xs font-bold text-primary transition-all hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50';
+
   return (
-    <div className="admin-page">
+    <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-page px-6 pb-8 pt-5 rtl">
 
       {/* Top bar */}
-      <div className="admin-topbar">
-        <div className="admin-topbar-title">
-          <h2>إدارة الحسابات</h2>
-          <span className="admin-topbar-sub">إجمالي {counts.all} حساب</span>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-[22px] font-extrabold leading-tight text-gray-900">إدارة الحسابات</h2>
+          <span className="text-xs font-medium text-gray-500">إجمالي {counts.all} حساب</span>
         </div>
 
-        <div className="admin-topbar-actions">
+        <div className="flex flex-wrap items-center gap-5">
           <input
             id="pilgrims-excel-upload"
             type="file"
             accept=".xlsx,.xls"
-            style={{ display: 'none' }}
+            className="hidden"
             onChange={handlePilgrimsExcelUpload}
           />
           <label
             htmlFor="pilgrims-excel-upload"
-            className={`admin-refresh-btn${uploadingPilgrims ? ' is-disabled' : ''}`}
-            style={uploadingPilgrims ? { pointerEvents: 'none', opacity: 0.6 } : undefined}
+            className={cn(refreshBtnClass, uploadingPilgrims && 'pointer-events-none opacity-60')}
             title="رفع ملف الحجاج (Sheet: main)"
           >
             {uploadingPilgrims ? 'جارٍ رفع الملف...' : 'رفع ملف الحجاج'}
           </label>
           <button
-            className="admin-refresh-btn"
+            type="button"
+            className={refreshBtnClass}
             onClick={() => {
               const next = !showPilgrimsPreview;
               setShowPilgrimsPreview(next);
@@ -525,20 +529,29 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
             {showPilgrimsPreview ? 'إخفاء معاينة جدول الحجاج' : 'عرض معاينة جدول الحجاج'}
           </button>
 
-          {/* Auto Approve Toggle */}
-          <div className="auto-approve-toggle-wrap">
-            <span className="auto-approve-label">الموافقة التلقائية</span>
-            <button 
-              className={`auto-approve-toggle${autoApprove ? ' is-on' : ''}`}
+          <div className="flex items-center gap-2.5 rounded-[10px] border border-border bg-white px-3 py-1.5">
+            <span className="text-xs font-bold text-gray-700">الموافقة التلقائية</span>
+            <button
+              type="button"
+              className={cn(
+                'relative h-[22px] w-[42px] shrink-0 cursor-pointer rounded-full border-none p-0 transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                autoApprove ? 'bg-primary' : 'bg-gray-300',
+              )}
               onClick={toggleAutoApprove}
               disabled={settingLoading}
               title={autoApprove ? 'إيقاف الموافقة التلقائية' : 'تفعيل الموافقة التلقائية'}
             >
-              <div className="auto-approve-knob" />
+              <div
+                className={cn(
+                  'absolute top-[3px] h-4 w-4 rounded-full bg-white transition-transform',
+                  autoApprove ? '-translate-x-5' : '',
+                )}
+                style={{ right: 3 }}
+              />
             </button>
           </div>
 
-          <button className="admin-refresh-btn" onClick={load} title="تحديث" disabled={loading}>
+          <button type="button" className={refreshBtnClass} onClick={load} title="تحديث" disabled={loading}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
               <path d="M4 4v6h6M20 20v-6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M20.49 9A9 9 0 0 0 5.64 5.64L4 10m16 4l-1.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -549,120 +562,176 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
       </div>
 
       {/* Stats row */}
-      <div className="admin-stats-row">
-        {([ ['all', 'الكل', '#0f172a'], ['pending', 'معلّق', '#d97706'], ['approved', 'مقبول', '#046A38'], ['rejected', 'مرفوض', '#b91c1c'] ] as const).map(([key, label, color]) => (
+      <div className="grid grid-cols-4 gap-2.5 max-md:grid-cols-2">
+        {(
+          [
+            ['all', 'الكل', '#0f172a'],
+            ['pending', 'معلّق', '#d97706'],
+            ['approved', 'مقبول', '#046A38'],
+            ['rejected', 'مرفوض', '#b91c1c'],
+          ] as const
+        ).map(([key, label, color]) => (
           <button
             key={key}
-            className={`admin-stat-card${tab === key ? ' active' : ''}`}
-            style={{ '--stat-color': color } as React.CSSProperties}
+            type="button"
+            className={cn(
+              'flex cursor-pointer flex-col gap-1 rounded-xl border-2 bg-white px-4 py-3.5 text-right transition-all duration-150 hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
+              tab !== key && 'border-border',
+            )}
+            style={
+              tab === key
+                ? ({ borderColor: color, background: `color-mix(in srgb, ${color} 8%, white)` } as React.CSSProperties)
+                : undefined
+            }
             onClick={() => setTab(key)}
           >
-            <span className="admin-stat-num">{counts[key as keyof typeof counts]}</span>
-            <span className="admin-stat-label">{label}</span>
+            <span className="text-[28px] font-extrabold leading-none" style={{ color }}>
+              {counts[key as keyof typeof counts]}
+            </span>
+            <span className="text-xs font-semibold text-gray-500">{label}</span>
           </button>
         ))}
       </div>
 
-      {/* Search + tabs */}
-      <div className="admin-toolbar">
-        <div className="admin-search-wrap">
-          <svg className="admin-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+      {/* Search */}
+      <div className="flex items-center gap-3">
+        <div className="relative max-w-[360px] flex-1">
+          <svg
+            className="pointer-events-none absolute end-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
             <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
             <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>
           <input
-            className="admin-search"
+            className="w-full rounded-lg border border-border-strong bg-white py-2 ps-9 pe-9 text-[13px] text-gray-900 outline-none transition-shadow rtl:text-right focus:border-primary focus:shadow-[0_0_0_3px_rgba(4,106,56,0.12)]"
             placeholder="بحث بالاسم أو الإيميل..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
-            <button className="admin-search-clear" onClick={() => setSearch('')}>✕</button>
+            <button
+              type="button"
+              className="absolute start-2.5 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0.5 text-xs text-gray-400 hover:text-gray-700"
+              onClick={() => setSearch('')}
+            >
+              ✕
+            </button>
           )}
         </div>
       </div>
 
-      {error && <p className="approval-error">{error}</p>}
-      {uploadInfo && <p className="approval-loading">{uploadInfo}</p>}
+      {error && <p className="text-sm font-semibold text-red-700">{error}</p>}
+      {uploadInfo && <p className="text-sm text-fg-secondary">{uploadInfo}</p>}
 
       {/* Table */}
       {loading ? (
-        <p className="approval-loading">جاري التحميل...</p>
+        <p className="text-sm text-fg-secondary">جاري التحميل...</p>
       ) : (
-        <div className="admin-table-wrap">
+        <div className="overflow-hidden rounded-[14px] border border-border bg-white shadow-card-sm">
           {visible.length === 0 ? (
-            <p className="approval-empty">لا توجد نتائج.</p>
+            <p className="px-2 py-3 text-sm text-fg-secondary">لا توجد نتائج.</p>
           ) : (
-            <table className="admin-table">
+            <table className="w-full border-collapse text-[13px] rtl:text-right">
               <thead>
-                <tr>
-                  <th>المستخدم</th>
-                  <th>الإيميل</th>
-                  <th>الحالة</th>
-                  <th>تاريخ الطلب</th>
-                  <th>الإجراءات</th>
+                <tr className="border-b border-border bg-gray-50">
+                  <th className="whitespace-nowrap px-4 py-2.5 text-right text-[11px] font-bold tracking-wide text-gray-500 uppercase">
+                    المستخدم
+                  </th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-right text-[11px] font-bold tracking-wide text-gray-500 uppercase max-md:hidden">
+                    الإيميل
+                  </th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-right text-[11px] font-bold tracking-wide text-gray-500 uppercase">
+                    الحالة
+                  </th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-right text-[11px] font-bold tracking-wide text-gray-500 uppercase max-md:hidden">
+                    تاريخ الطلب
+                  </th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-right text-[11px] font-bold tracking-wide text-gray-500 uppercase">
+                    الإجراءات
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {visible.map((row) => (
-                  <tr key={row.approvalId} className={actionId === row.approvalId ? 'row-loading' : ''}>
-                    {/* User */}
-                    <td>
-                      <div className="admin-user-cell">
+                  <tr
+                    key={row.approvalId}
+                    className={cn(
+                      'border-b border-border transition-colors last:border-b-0 hover:bg-gray-50',
+                      actionId === row.approvalId && 'pointer-events-none opacity-50',
+                    )}
+                  >
+                    <td className="px-4 py-2.5 align-middle">
+                      <div className="flex items-center gap-2.5">
                         {row.avatar ? (
-                          <img src={row.avatar} alt={row.name} className="admin-avatar" />
+                          <img src={row.avatar} alt={row.name} className="h-9 w-9 shrink-0 rounded-full border border-border object-cover" />
                         ) : (
-                          <div className="admin-avatar fallback">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-primary text-sm font-bold text-white">
                             {row.name.slice(0, 1).toUpperCase()}
                           </div>
                         )}
                         <div>
-                          <div className="admin-user-name">{row.name}</div>
+                          <div className="text-[13px] font-semibold text-gray-900">{row.name}</div>
                           {row.role === 'admin' && (
-                            <span className="admin-role-badge">مسؤول</span>
+                            <span className="mt-0.5 inline-block rounded-full border border-amber-200 bg-amber-100 px-1.5 py-px text-[10px] font-bold text-amber-900">
+                              مسؤول
+                            </span>
                           )}
                         </div>
                       </div>
                     </td>
 
-                    {/* Email */}
-                    <td className="admin-email">{row.email}</td>
+                    <td className="max-md:hidden px-4 py-2.5 align-middle text-right text-xs text-gray-600 ltr:text-right" dir="ltr">
+                      {row.email}
+                    </td>
 
-                    {/* Status */}
-                    <td>
-                      <span className={`admin-status-badge ${STATUS_CLASS[row.status]}`}>
+                    <td className="px-4 py-2.5 align-middle">
+                      <span
+                        className={cn(
+                          'inline-block rounded-full border px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap',
+                          STATUS_BADGE_CLASS[row.status],
+                        )}
+                      >
                         {STATUS_LABEL[row.status]}
                       </span>
                     </td>
 
-                    {/* Date */}
-                    <td className="admin-date">
+                    <td className="max-md:hidden whitespace-nowrap px-4 py-2.5 align-middle text-xs text-gray-500">
                       {new Date(row.requestedAt).toLocaleDateString('ar-SA', {
                         day: '2-digit', month: 'short', year: 'numeric',
                       })}
                     </td>
 
-                    {/* Actions */}
-                    <td>
-                      <div className="admin-row-actions">
+                    <td className="px-4 py-2.5 align-middle">
+                      <div className="flex flex-nowrap items-center gap-1.5">
                         {row.status === 'pending' && (
                           <>
                             <button
-                              className="approval-btn accept"
+                              type="button"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-transparent bg-primary px-3 py-1.5 text-xs font-bold whitespace-nowrap text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
                               onClick={() => setStatus(row, 'approved')}
                               disabled={!!actionId}
-                            >اعتماد</button>
+                            >
+                              اعتماد
+                            </button>
                             <button
-                              className="approval-btn reject"
+                              type="button"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-200 bg-red-100 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-red-800 transition-colors hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
                               onClick={() => setStatus(row, 'rejected')}
                               disabled={!!actionId}
-                            >رفض</button>
+                            >
+                              رفض
+                            </button>
                           </>
                         )}
                         {row.status === 'approved' && row.role !== 'admin' && (
                           <>
                             <button
-                              className="approval-btn promote"
+                              type="button"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-sky-200 bg-sky-100 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-sky-800 transition-colors hover:bg-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
                               onClick={() => askConfirm(row, 'promote')}
                               disabled={!!actionId}
                               title="ترقية إلى مسؤول"
@@ -670,15 +739,19 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
                               ترقية
                             </button>
                             <button
-                              className="approval-btn reject"
+                              type="button"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-200 bg-red-100 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-red-800 transition-colors hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
                               onClick={() => askConfirm(row, 'revoke')}
                               disabled={!!actionId}
-                            >سحب الموافقة</button>
+                            >
+                              سحب الموافقة
+                            </button>
                           </>
                         )}
                         {row.status === 'approved' && row.role === 'admin' && row.userId !== adminUserId && (
                           <button
-                            className="approval-btn downgrade"
+                            type="button"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-amber-200 bg-amber-100 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-amber-900 transition-colors hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
                             onClick={() => askConfirm(row, 'downgrade')}
                             disabled={!!actionId}
                             title="تنزيل إلى مستخدم عادي"
@@ -688,15 +761,18 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
                         )}
                         {row.status === 'rejected' && (
                           <button
-                            className="approval-btn accept"
+                            type="button"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-transparent bg-primary px-3 py-1.5 text-xs font-bold whitespace-nowrap text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
                             onClick={() => setStatus(row, 'approved')}
                             disabled={!!actionId}
-                          >إعادة قبول</button>
+                          >
+                            إعادة قبول
+                          </button>
                         )}
-                        
-                        {/* Reset Password Button */}
+
                         <button
-                          className="approval-btn reset-pwd"
+                          type="button"
+                          className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-300 bg-slate-100 px-2 py-1.5 text-slate-700 transition-colors hover:bg-slate-200 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
                           onClick={() => askConfirm(row, 'reset_pwd')}
                           disabled={!!actionId}
                           title="إعادة تعيين كلمة السر"
@@ -709,7 +785,8 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
 
                         {row.role !== 'admin' && (
                           <button
-                            className="approval-btn delete"
+                            type="button"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-2 py-1.5 text-rose-900 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                             onClick={() => askConfirm(row, 'delete')}
                             disabled={!!actionId}
                             title="حذف الحساب نهائياً"
@@ -729,26 +806,24 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
         </div>
       )}
 
-      {/* Pilgrims Table Preview (admin only) */}
-      {showPilgrimsPreview && <div className="admin-pilgrims-preview">
-        <div className="admin-topbar" style={{ marginTop: 6 }}>
-          <div className="admin-topbar-title">
-            <h2>معاينة جدول الحجاج الأصلي</h2>
-            <span className="admin-topbar-sub">
-              إجمالي {previewTotal.toLocaleString()} سجل
-            </span>
+      {showPilgrimsPreview && (
+        <div className="flex flex-col gap-2 border-t border-border pt-2">
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[22px] font-extrabold leading-tight text-gray-900">معاينة جدول الحجاج الأصلي</h2>
+            <span className="text-xs font-medium text-gray-500">إجمالي {previewTotal.toLocaleString()} سجل</span>
           </div>
         </div>
 
-        {previewError && <p className="approval-error">{previewError}</p>}
+        {previewError && <p className="text-sm font-semibold text-red-700">{previewError}</p>}
         {previewLoading ? (
-          <p className="approval-loading">جاري تحميل المعاينة...</p>
+          <p className="text-sm text-fg-secondary">جاري تحميل المعاينة...</p>
         ) : (
-          <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
+          <div className="overflow-hidden overflow-x-auto rounded-[14px] border border-border bg-white shadow-card-sm">
             {previewRows.length === 0 ? (
-              <p className="approval-empty">لا توجد بيانات في جدول الحجاج.</p>
+              <p className="px-2 py-3 text-sm text-fg-secondary">لا توجد بيانات في جدول الحجاج.</p>
             ) : (
-              <table className="admin-table">
+              <table className="w-full border-collapse text-[13px] rtl:text-right">
                 <thead>
                   <tr>
                     {PILGRIMS_COLUMNS.map((col) => (
@@ -772,19 +847,21 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
         )}
 
         {previewPages > 1 && (
-          <div className="pilgrims-table-pagination">
+          <div className="flex items-center justify-center gap-3 border-t border-gray-100 px-4 py-2.5">
             <button
-              className="pt-btn"
+              type="button"
+              className="cursor-pointer rounded-md border border-border bg-page px-3.5 py-1 text-xs text-fg transition-colors hover:border-primary hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() => setPreviewPage((p) => Math.max(1, p - 1))}
               disabled={previewPage === 1 || previewLoading}
             >
               ‹ السابق
             </button>
-            <span className="pt-pages">
+            <span className="min-w-[60px] text-center text-xs text-fg-secondary">
               {previewPage} / {previewPages}
             </span>
             <button
-              className="pt-btn"
+              type="button"
+              className="cursor-pointer rounded-md border border-border bg-page px-3.5 py-1 text-xs text-fg transition-colors hover:border-primary hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() => setPreviewPage((p) => Math.min(previewPages, p + 1))}
               disabled={previewPage === previewPages || previewLoading}
             >
@@ -792,49 +869,70 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
             </button>
           </div>
         )}
-      </div>}
+      </div>
+      )}
 
-      {/* Confirm dialog */}
       {confirmRow && confirmAction && (
-        <div className="admin-confirm-backdrop" onClick={() => { setConfirmRow(null); setConfirmAction(null); }}>
-          <div className="admin-confirm-box" onClick={(e) => e.stopPropagation()}>
-            <p className="admin-confirm-msg">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/45 p-[18px]"
+          onClick={() => {
+            setConfirmRow(null);
+            setConfirmAction(null);
+          }}
+          role="presentation"
+        >
+          <div
+            className="flex w-full max-w-[420px] flex-col gap-4 rounded-[14px] border border-border bg-white p-5 pb-4 shadow-[0_20px_40px_rgba(15,23,42,0.2)] rtl"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <p className="text-sm font-semibold leading-relaxed text-gray-800">
               {confirmAction === 'delete' && `هل أنت متأكد من حذف حساب "${confirmRow.name}" نهائياً؟`}
               {confirmAction === 'revoke' && `هل تريد سحب موافقة "${confirmRow.name}"؟`}
               {confirmAction === 'reset_pwd' && `إعادة تعيين كلمة السر للمستخدم "${confirmRow.name}"`}
               {confirmAction === 'promote' && `هل تريد ترقية "${confirmRow.name}" ليكون مسؤولاً (Admin)؟`}
               {confirmAction === 'downgrade' && `هل تريد تنزيل صلاحيات "${confirmRow.name}" لمستخدم عادي؟`}
             </p>
-            
+
             {confirmAction === 'reset_pwd' && (
-              <div style={{ marginTop: '10px' }}>
+              <div className="mt-1">
                 <input
                   type="text"
-                  className="auth-input"
+                  className="w-full rounded-lg border border-border-strong px-3.5 py-3 font-sans text-sm transition-all focus:border-primary focus:shadow-[0_0_0_3px_#e8f5ee] focus:outline-none ltr:text-left"
                   placeholder="كلمة السر الجديدة..."
                   value={resetPwdValue}
                   onChange={(e) => setResetPwdValue(e.target.value)}
                   autoFocus
                 />
-                <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                  6 أحرف على الأقل
-                </p>
+                <p className="mt-1 text-[11px] text-fg-secondary">6 أحرف على الأقل</p>
               </div>
             )}
 
-            <div className="admin-confirm-actions">
+            <div className="flex justify-end gap-2">
               <button
-                className={`approval-btn ${
-                  confirmAction === 'delete' || confirmAction === 'revoke' || confirmAction === 'downgrade' 
-                    ? 'reject' 
-                    : 'accept'
-                }`}
+                type="button"
+                className={cn(
+                  'inline-flex cursor-pointer items-center gap-1 rounded-lg border border-transparent px-3 py-1.5 text-xs font-bold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                  confirmAction === 'delete' || confirmAction === 'revoke' || confirmAction === 'downgrade'
+                    ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                    : 'bg-primary text-white hover:bg-primary-dark',
+                )}
                 onClick={handleConfirm}
                 disabled={confirmAction === 'reset_pwd' && resetPwdValue.length < 6}
               >
                 {confirmAction === 'reset_pwd' ? 'تغيير' : 'تأكيد'}
               </button>
-              <button className="profile-cancel-btn" onClick={() => { setConfirmRow(null); setConfirmAction(null); }}>إلغاء</button>
+              <button
+                type="button"
+                className="cursor-pointer rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-fg-secondary transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-fg"
+                onClick={() => {
+                  setConfirmRow(null);
+                  setConfirmAction(null);
+                }}
+              >
+                إلغاء
+              </button>
             </div>
           </div>
         </div>

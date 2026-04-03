@@ -29,15 +29,16 @@ const NODE_KEYS = Object.keys(NODE_LABELS) as (keyof JourneyFilters)[];
 
 function ActiveBadges() {
   const filters = useJourneyFilters((s) => s.filters);
-  const toggle  = useJourneyFilters((s) => s.toggleNodeFilter);
-  const active  = NODE_KEYS.filter((k) => filters[k]);
+  const toggle = useJourneyFilters((s) => s.toggleNodeFilter);
+  const active = NODE_KEYS.filter((k) => filters[k]);
   return (
-    <div className="journey-badges-slot">
-      <div className="filter-badges journey-badges journey-badges-row">
+    <div className="flex min-h-9 shrink-0 items-center">
+      <div className="flex max-w-full flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden pb-0.5">
         {active.map((k) => (
           <button
             key={k}
-            className="filter-badge"
+            type="button"
+            className="shrink-0 cursor-pointer rounded-full border border-[#b3d9c5] bg-primary-pale px-3 py-1 text-xs font-medium text-primary-dark transition-all duration-150 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
             onClick={() => toggle(k, filters[k]!)}
           >
             {NODE_LABELS[k]}: <strong>{formatJourneyBadgeValue(k, filters[k]!)}</strong> x
@@ -49,21 +50,23 @@ function ActiveBadges() {
 }
 
 export function JourneyPage() {
-  const filters     = useJourneyFilters((s) => s.filters);
-  const clearAll    = useJourneyFilters((s) => s.clearAll);
+  const filters = useJourneyFilters((s) => s.filters);
+  const clearAll = useJourneyFilters((s) => s.clearAll);
   const setSidebarFilter = useJourneyFilters((s) => s.setSidebarFilter);
   const hasAnyFilter = Object.entries(filters).some(([key, value]) => {
-    // "all" state for journey table should not count as active
     if (key === 'table_inside_kingdom') return value !== null;
     return Boolean(value);
   });
   const { filteredData } = useJourneyData();
 
   return (
-    <div className="journey-page-wrap">
-      <div className="journey-page-header">
-        <div className="journey-page-header-left">
-          <span className="journey-page-icon" title="مسار الرحلة">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-white px-[22px] py-2.5">
+        <div className="flex items-center gap-2.5">
+          <span
+            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-primary-pale"
+            title="مسار الرحلة"
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path
                 d="M4 14h5l2.5-2.5 6 1.5 1.5-1.5-4.5-2-1-3.5M12 15l-1.5 3M20 10h-5l-2.5 2.5-6-1.5-1.5 1.5 4.5 2 1 3.5M12 9l1.5-3"
@@ -74,27 +77,31 @@ export function JourneyPage() {
               />
             </svg>
           </span>
-          <h2 className="journey-page-title">مسار رحلة الحجاج</h2>
-          <span className="journey-page-sub">Haj Journey Map</span>
+          <h2 className="text-base font-bold tracking-tight text-fg">مسار رحلة الحجاج</h2>
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-fg-muted">Haj Journey Map</span>
         </div>
-        <div className="journey-page-header-right">
+        <div className="flex items-center gap-2.5">
           {hasAnyFilter && (
-            <button className="clear-all-btn journey-clear-btn" onClick={clearAll}>
+            <button
+              type="button"
+              className="cursor-pointer rounded-lg border border-red-200 bg-white px-3.5 py-1.5 font-sans text-xs font-bold text-red-700 shadow-sm transition-colors hover:bg-red-50"
+              onClick={clearAll}
+            >
               مسح جميع الفلاتر
             </button>
           )}
         </div>
       </div>
 
-      <div className="main-layout" style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <JourneySidebarFilters />
 
-        <main className="content-area">
+        <main className="scrollbar-content flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-page px-[22px] pb-7 pt-[18px]">
           <ActiveBadges />
-          <div className="journey-flow-block">
+          <div className="shrink-0">
             <JourneyFlow />
           </div>
-          <div className="journey-table-block">
+          <div className="shrink-0">
             <PilgrimsTable
               data={filteredData}
               searchValue={filters.table_search ?? ''}

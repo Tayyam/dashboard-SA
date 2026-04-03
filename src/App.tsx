@@ -21,6 +21,7 @@ import { supabase } from './core/supabaseClient';
 import { ensureUserAndApproval, type AppRole, type ApprovalStatus } from './core/authAccess';
 import type { Filters } from './core/types';
 import { formatJourneyAirportCode } from './core/airportDisplay';
+import { cn } from './lib/cn';
 
 type Page = 'dashboard' | 'journey' | 'approvals' | 'profile' | 'reports';
 type ProfilePayload = {
@@ -70,9 +71,14 @@ function ActiveFilterBadges() {
   if (active.length === 0) return null;
 
   return (
-    <div className="filter-badges">
+    <div className="flex flex-wrap gap-2">
       {active.map((k) => (
-        <button key={k} className="filter-badge" onClick={() => toggle(k, filters[k]!)}>
+        <button
+          key={k}
+          type="button"
+          className="cursor-pointer rounded-full border border-[#b3d9c5] bg-primary-pale px-3 py-1 text-xs font-medium text-primary-dark transition-all duration-150 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+          onClick={() => toggle(k, filters[k]!)}
+        >
           {labels[k]}:{' '}
           <strong>
             {k === 'chart_arrival_city'
@@ -231,8 +237,10 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="auth-screen">
-        <div className="auth-card auth-loading">جاري تحميل الجلسة...</div>
+      <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-gray-50 p-5">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-white px-10 py-12 text-center text-fg-secondary shadow-xl">
+          جاري تحميل الجلسة...
+        </div>
       </div>
     );
   }
@@ -241,7 +249,6 @@ export default function App() {
     return <AuthPage />;
   }
 
-  // New User Onboarding Flow
   if (needsOnboarding && !accessLoading) {
     return (
       <OnboardingPage
@@ -251,7 +258,7 @@ export default function App() {
         onFinish={async (payload) => {
           await saveProfile(payload, { markProfileCompleted: true });
           setNeedsOnboarding(false);
-          setShowIntro(true); // Show welcome intro after onboarding
+          setShowIntro(true);
         }}
       />
     );
@@ -263,15 +270,17 @@ export default function App() {
 
   if (showIntro) {
     return (
-      <div className="intro-overlay">
-        <div className="intro-card">
-          <div className="intro-logo-wrap">
-            <img src="/logo.jpg" alt="Logo" className="intro-logo" />
+      <div
+        className="flex h-screen w-full items-center justify-center animate-[intro-fade_0.45s_ease] bg-[radial-gradient(circle_at_20%_20%,rgba(4,106,56,0.2),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(4,106,56,0.18),transparent_45%),#f1f5f9]"
+      >
+        <div className="flex min-w-[360px] max-w-[520px] flex-col items-center gap-3 rounded-2xl border border-border bg-white px-7 pb-5 pt-6 shadow-[0_10px_30px_rgba(15,23,42,0.12)]">
+          <div className="rounded-xl border border-border bg-gray-100 px-3 py-2">
+            <img src="/logo.jpg" alt="Logo" className="block h-[62px] w-auto rounded-[10px]" />
           </div>
-          <h2 className="intro-title">لوحة المعلومات التنفيذية</h2>
-          <p className="intro-subtitle">مرحبًا بكم في منصة تحليلات بيانات الحجاج</p>
-          <div className="intro-progress">
-            <span className="intro-progress-bar" />
+          <h2 className="text-[26px] font-extrabold tracking-tight text-primary">لوحة المعلومات التنفيذية</h2>
+          <p className="text-sm font-medium text-fg-secondary">مرحبًا بكم في منصة تحليلات بيانات الحجاج</p>
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+            <span className="block h-full w-0 animate-[intro-load_3s_linear_forwards] bg-gradient-to-r from-primary to-emerald-600" />
           </div>
         </div>
       </div>
@@ -279,29 +288,32 @@ export default function App() {
   }
 
   const isDashboard = page === 'dashboard';
-  const isJourney   = page === 'journey';
+  const isJourney = page === 'journey';
   const isApprovals = page === 'approvals';
-  const isReports   = page === 'reports';
+  const isReports = page === 'reports';
 
   return (
-    <div className="app-shell">
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="top-header">
-        <div className="header-left">
-          <div className="header-brand">
-            <div className="header-logo-wrap">
-              <img src="/logo.jpg" alt="Logo" className="header-logo-img" />
+    <div className="flex h-screen flex-col overflow-hidden">
+      <header className="relative z-10 flex h-[78px] shrink-0 items-center justify-between bg-primary px-[22px] shadow-[0_4px_14px_rgba(4,106,56,0.22)] max-md:h-[70px] max-md:px-4">
+        <div className="flex items-center">
+          <div className="flex items-center gap-3">
+            <div className="flex min-h-[58px] min-w-[78px] items-center justify-center rounded-xl bg-gray-100 px-2.5 py-1.5 shadow-[0_1px_4px_rgba(15,23,42,0.15)] max-md:min-h-[50px] max-md:min-w-[66px] max-md:p-2">
+              <img
+                src="/logo.jpg"
+                alt="Logo"
+                className="h-[46px] w-auto max-w-none rounded-lg object-contain max-md:h-[38px]"
+              />
             </div>
             {(isDashboard || isReports) && (
-              <div className="header-texts">
-                <h1 className="header-title">
+              <div className="flex min-w-0 flex-col gap-1">
+                <h1 className="text-2xl font-bold leading-tight tracking-tight text-white max-md:text-xl max-[768px]:text-lg">
                   {isReports ? 'التقارير' : 'لوحة المعلومات التنفيذية'}
                 </h1>
-                <div className="header-sub-row">
-                  <span className="header-subtitle">
+                <div className="flex items-center gap-2">
+                  <span className="hidden w-fit rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-xs font-medium tracking-wide text-white/90 lg:inline">
                     {isReports ? 'تقارير أنواع الباقات والبيانات' : 'تحليلات بيانات الحجاج'}
                   </span>
-                  <span className="header-date">
+                  <span className="hidden whitespace-nowrap rounded-full border border-white/30 bg-white/15 px-3 py-1.5 text-xs font-medium text-white md:inline">
                     {new Date().toLocaleDateString('ar-SA', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
@@ -309,60 +321,110 @@ export default function App() {
             )}
           </div>
         </div>
-        <nav className="header-nav">
+        <nav className="flex items-center gap-1 rounded-[10px] bg-black/15 p-1">
           <button
-            className={`header-nav-tab${isDashboard ? ' active' : ''}`}
+            type="button"
+            className={cn(
+              'rounded-[7px] border-none bg-transparent px-[18px] py-1.5 font-sans text-[13px] font-semibold whitespace-nowrap text-white/70 transition-all duration-[180ms] ease-out',
+              'hover:bg-white/12 hover:text-white',
+              isDashboard && 'bg-white text-primary-dark shadow-[0_1px_4px_rgba(0,0,0,0.15)]',
+            )}
             onClick={() => setPage('dashboard')}
           >
             لوحة المعلومات
           </button>
           <button
-            className={`header-nav-tab${isJourney ? ' active' : ''}`}
+            type="button"
+            className={cn(
+              'rounded-[7px] border-none bg-transparent px-[18px] py-1.5 font-sans text-[13px] font-semibold whitespace-nowrap text-white/70 transition-all duration-[180ms] ease-out',
+              'hover:bg-white/12 hover:text-white',
+              isJourney && 'bg-white text-primary-dark shadow-[0_1px_4px_rgba(0,0,0,0.15)]',
+            )}
             onClick={() => setPage('journey')}
           >
             مسار الرحلة
           </button>
           <button
-            className={`header-nav-tab${isReports ? ' active' : ''}`}
+            type="button"
+            className={cn(
+              'rounded-[7px] border-none bg-transparent px-[18px] py-1.5 font-sans text-[13px] font-semibold whitespace-nowrap text-white/70 transition-all duration-[180ms] ease-out',
+              'hover:bg-white/12 hover:text-white',
+              isReports && 'bg-white text-primary-dark shadow-[0_1px_4px_rgba(0,0,0,0.15)]',
+            )}
             onClick={() => setPage('reports')}
           >
             التقارير
           </button>
           {isAdmin && (
             <button
-              className={`header-nav-tab${isApprovals ? ' active' : ''}`}
+              type="button"
+              className={cn(
+                'rounded-[7px] border-none bg-transparent px-[18px] py-1.5 font-sans text-[13px] font-semibold whitespace-nowrap text-white/70 transition-all duration-[180ms] ease-out',
+                'hover:bg-white/12 hover:text-white',
+                isApprovals && 'bg-white text-primary-dark shadow-[0_1px_4px_rgba(0,0,0,0.15)]',
+              )}
               onClick={() => setPage('approvals')}
             >
               الموافقات
             </button>
           )}
         </nav>
-        <div className="header-right">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
-            className="header-user-chip"
+            className="inline-flex max-w-[220px] cursor-pointer items-center gap-2 rounded-full border border-white/30 bg-white/15 py-0.5 ps-1 pe-2 transition-all duration-150 ease-out hover:border-white/50 hover:bg-white/25 max-[768px]:p-0.5"
             title="تعديل الملف الشخصي"
             onClick={() => setPage('profile')}
           >
-            <span className="header-user-name">{displayName || userEmail}</span>
+            <span className="truncate text-xs font-semibold text-white max-[768px]:hidden">
+              {displayName || userEmail}
+            </span>
             {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName || 'User'} className="header-user-avatar" />
+              <img
+                src={avatarUrl}
+                alt={displayName || 'User'}
+                className="h-7 w-7 shrink-0 rounded-full border border-white/50 object-cover"
+              />
             ) : (
-              <span className="header-user-avatar fallback" aria-label="User avatar">
+              <span
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/50 bg-white/25 font-bold text-white"
+                aria-label="User avatar"
+              >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
-                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path
+                    d="M4 20c0-4 3.6-7 8-7s8 3 8 7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </span>
             )}
           </button>
-          <button className="icon-action-btn" onClick={() => supabase.auth.signOut()} title="تسجيل الخروج" aria-label="تسجيل الخروج">
+          <button
+            type="button"
+            className="inline-flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-lg border border-white/35 bg-white/15 text-white transition-all duration-150 ease-out hover:border-white/50 hover:bg-white/25"
+            onClick={() => supabase.auth.signOut()}
+            title="تسجيل الخروج"
+            aria-label="تسجيل الخروج"
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M15 7l5 5-5 5M20 12H9M12 4H6a2 2 0 00-2 2v12a2 2 0 002 2h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path
+                d="M15 7l5 5-5 5M20 12H9M12 4H6a2 2 0 00-2 2v12a2 2 0 002 2h6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
           {isDashboard && hasAnyFilter && (
-            <button className="clear-all-btn" onClick={clearAll}>
+            <button
+              type="button"
+              className="cursor-pointer whitespace-nowrap rounded-lg border border-white bg-white px-3.5 py-1.5 font-sans text-xs font-bold text-primary-dark shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition-all duration-150 ease-out hover:border-gray-100 hover:bg-gray-100"
+              onClick={clearAll}
+            >
               مسح جميع الفلاتر
             </button>
           )}
@@ -385,169 +447,154 @@ export default function App() {
       {isApprovals && isAdmin && <ApprovalsPage adminUserId={session.user.id} />}
       {isReports && <ReportsPage />}
 
-      {isDashboard && <div className="main-layout">
-        {/* ── Sidebar ──────────────────────────────────────────── */}
-        <SidebarFilters />
+      {isDashboard && (
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <SidebarFilters />
 
-        {/* ── Content ──────────────────────────────────────────── */}
-        <main className="content-area">
-          {/* KPI Cards */}
-          <KPICards
-            totalPilgrims={totalPilgrims}
-            makkahRooms={makkahRooms}
-            madinahRooms={madinahRooms}
-          />
+          <main className="scrollbar-content flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-page px-[22px] pb-7 pt-[18px]">
+            <KPICards
+              totalPilgrims={totalPilgrims}
+              makkahRooms={makkahRooms}
+              madinahRooms={madinahRooms}
+            />
 
-          {/* Active cross-filter badges */}
-          <ActiveFilterBadges />
+            <ActiveFilterBadges />
 
-          {/* Charts Grid */}
-          <div className="charts-grid">
-            {/* Row 1: Pie + Arrival City */}
-            <div className="chart-span-1">
-              <ChartWrapper title="توزيع الحجاج حسب الجنس" height={280}>
-                <PieChart
-                  data={genderData}
-                  onSegmentClick={(v) => toggleChart('chart_gender', v)}
+            <div className="grid grid-cols-4 gap-[14px] max-xl:grid-cols-2 max-md:grid-cols-1">
+              <div className="col-span-1 max-md:col-span-1">
+                <ChartWrapper title="توزيع الحجاج حسب الجنس" height={280}>
+                  <PieChart data={genderData} onSegmentClick={(v) => toggleChart('chart_gender', v)} />
+                </ChartWrapper>
+              </div>
+
+              <div className="col-span-2 max-md:col-span-1">
+                <ChartWrapper title="عدد الحجاج حسب مدينة الوصول" height={280}>
+                  <BarChart
+                    data={arrivalCityData}
+                    categoryKey="axisLabel"
+                    onSegmentClick={(v) => toggleChart('chart_arrival_city', v)}
+                    layout="vertical"
+                  />
+                </ChartWrapper>
+              </div>
+
+              <div className="col-span-1 max-md:col-span-1">
+                <ChartWrapper title="عدد الحجاج حسب عقد الطيران" height={280}>
+                  <BarChart
+                    data={contractData}
+                    onSegmentClick={(v) => toggleChart('chart_contract_type', v)}
+                    layout="vertical"
+                  />
+                </ChartWrapper>
+              </div>
+
+              <div className="col-span-4 max-xl:col-span-2 max-md:col-span-1">
+                <PilgrimsTable
+                  data={filteredData}
+                  searchValue={filters.table_search ?? ''}
+                  insideFilterValue={filters.table_inside_kingdom ?? 'all'}
+                  onSearchChange={(value) => setSidebarFilter('table_search', value.trim() ? value : null)}
+                  onInsideFilterChange={(value) =>
+                    setSidebarFilter('table_inside_kingdom', value === 'all' ? null : value)
+                  }
                 />
-              </ChartWrapper>
-            </div>
+              </div>
 
-            <div className="chart-span-2">
-              <ChartWrapper title="عدد الحجاج حسب مدينة الوصول" height={280}>
-                <BarChart
-                  data={arrivalCityData}
-                  categoryKey="axisLabel"
-                  onSegmentClick={(v) => toggleChart('chart_arrival_city', v)}
-                  layout="vertical"
-                />
-              </ChartWrapper>
-            </div>
+              <div className="col-span-2 max-md:col-span-1">
+                <ChartWrapper title="عدد الحجاج حسب تاريخ الوصول" height={240}>
+                  <BarChart
+                    data={arrivalDateData}
+                    onSegmentClick={(v) => toggleChart('chart_arrival_date', v)}
+                    maxLabelLen={10}
+                  />
+                </ChartWrapper>
+              </div>
 
-            <div className="chart-span-1">
-              <ChartWrapper title="عدد الحجاج حسب عقد الطيران" height={280}>
-                <BarChart
-                  data={contractData}
-                  onSegmentClick={(v) => toggleChart('chart_contract_type', v)}
-                  layout="vertical"
-                />
-              </ChartWrapper>
-            </div>
+              <div className="col-span-2 max-md:col-span-1">
+                <ChartWrapper title="عدد الحجاج حسب تاريخ المغادرة" height={240}>
+                  <BarChart
+                    data={departureDateData}
+                    onSegmentClick={(v) => toggleChart('chart_departure_date', v)}
+                    maxLabelLen={10}
+                  />
+                </ChartWrapper>
+              </div>
 
-            <div className="chart-span-3">
-              <PilgrimsTable
-                data={filteredData}
-                searchValue={filters.table_search ?? ''}
-                insideFilterValue={filters.table_inside_kingdom ?? 'all'}
-                onSearchChange={(value) => setSidebarFilter('table_search', value.trim() ? value : null)}
-                onInsideFilterChange={(value) =>
-                  setSidebarFilter('table_inside_kingdom', value === 'all' ? null : value)
-                }
-              />
-            </div>
+              <div className="col-span-2 max-md:col-span-1">
+                <ChartWrapper title="عدد الحجاج حسب التوقف الأول" height={260}>
+                  <BarChart
+                    data={arrivalHotelData}
+                    onSegmentClick={(v) => toggleChart('chart_arrival_hotel', v)}
+                    layout="vertical"
+                    maxLabelLen={18}
+                  />
+                </ChartWrapper>
+              </div>
 
-            {/* Row 2: Arrival Date + Departure Date */}
-            <div className="chart-span-2">
-              <ChartWrapper title="عدد الحجاج حسب تاريخ الوصول" height={240}>
-                <BarChart
-                  data={arrivalDateData}
-                  onSegmentClick={(v) => toggleChart('chart_arrival_date', v)}
-                  maxLabelLen={10}
-                />
-              </ChartWrapper>
-            </div>
+              <div className="col-span-2 max-md:col-span-1">
+                <ChartWrapper title="عدد الحجاج حسب التوقف الثاني" height={260}>
+                  <BarChart
+                    data={departureHotelData}
+                    onSegmentClick={(v) => toggleChart('chart_departure_hotel', v)}
+                    layout="vertical"
+                    maxLabelLen={18}
+                  />
+                </ChartWrapper>
+              </div>
 
-            <div className="chart-span-2">
-              <ChartWrapper title="عدد الحجاج حسب تاريخ المغادرة" height={240}>
-                <BarChart
-                  data={departureDateData}
-                  onSegmentClick={(v) => toggleChart('chart_departure_date', v)}
-                  maxLabelLen={10}
-                />
-              </ChartWrapper>
-            </div>
+              <div className="col-span-2 max-md:col-span-1">
+                <ChartWrapper title="عدد الحجاج حسب التوقف الثالث" height={260}>
+                  <BarChart
+                    data={thirdStopData}
+                    onSegmentClick={(v) => toggleChart('chart_third_stop', v)}
+                    layout="vertical"
+                    maxLabelLen={18}
+                  />
+                </ChartWrapper>
+              </div>
 
-            {/* Row 4: ثلاث نقاط توقف (فندق / منى …) */}
-            <div className="chart-span-2">
-              <ChartWrapper title="عدد الحجاج حسب التوقف الأول" height={260}>
-                <BarChart
-                  data={arrivalHotelData}
-                  onSegmentClick={(v) => toggleChart('chart_arrival_hotel', v)}
-                  layout="vertical"
-                  maxLabelLen={18}
-                />
-              </ChartWrapper>
-            </div>
+              <div className="col-span-4 max-xl:col-span-2 max-md:col-span-1">
+                <ChartWrapper title="عدد الحجاج حسب الجنسية" height={250}>
+                  <BarChart
+                    data={nationalityData}
+                    onSegmentClick={(v) => {
+                      if (v !== 'أخرى') toggleChart('chart_nationality', v);
+                    }}
+                    layout="vertical"
+                    maxLabelLen={14}
+                  />
+                </ChartWrapper>
+              </div>
 
-            <div className="chart-span-2">
-              <ChartWrapper title="عدد الحجاج حسب التوقف الثاني" height={260}>
-                <BarChart
-                  data={departureHotelData}
-                  onSegmentClick={(v) => toggleChart('chart_departure_hotel', v)}
-                  layout="vertical"
-                  maxLabelLen={18}
-                />
-              </ChartWrapper>
-            </div>
+              <div className="col-span-4 max-xl:col-span-2 max-md:col-span-1">
+                <ChartWrapper title="حالة الحجاج حسب التأشيرة" height={260}>
+                  <BarChart
+                    data={visaStatusData}
+                    onSegmentClick={(v) => toggleChart('chart_visa_status', v)}
+                    layout="vertical"
+                  />
+                </ChartWrapper>
+              </div>
 
-            <div className="chart-span-2">
-              <ChartWrapper title="عدد الحجاج حسب التوقف الثالث" height={260}>
-                <BarChart
-                  data={thirdStopData}
-                  onSegmentClick={(v) => toggleChart('chart_third_stop', v)}
-                  layout="vertical"
-                  maxLabelLen={18}
-                />
-              </ChartWrapper>
-            </div>
+              <div className="col-span-4 max-xl:col-span-2 max-md:col-span-1">
+                <ChartWrapper title="عدد الحجاج حسب الباقة" height={270}>
+                  <BarChart
+                    data={packageData}
+                    onSegmentClick={(v) => toggleChart('chart_package', v)}
+                    maxLabelLen={12}
+                  />
+                </ChartWrapper>
+              </div>
 
-            {/* Row 5: Nationality */}
-            <div className="chart-span-3">
-              <ChartWrapper title="عدد الحجاج حسب الجنسية" height={250}>
-                <BarChart
-                  data={nationalityData}
-                  onSegmentClick={(v) => { if (v !== 'أخرى') toggleChart('chart_nationality', v); }}
-                  layout="vertical"
-                  maxLabelLen={14}
-                />
-              </ChartWrapper>
+              <div className="col-span-4 max-xl:col-span-2 max-md:col-span-1">
+                <ChartWrapper title="التوزيع العمري" height={260}>
+                  <Histogram data={ageData} onSegmentClick={(v) => toggleChart('chart_age_bucket', v)} />
+                </ChartWrapper>
+              </div>
             </div>
-
-            {/* Row 6: Visa Status (under nationality) */}
-            <div className="chart-span-3">
-              <ChartWrapper title="حالة الحجاج حسب التأشيرة" height={260}>
-                <BarChart
-                  data={visaStatusData}
-                  onSegmentClick={(v) => toggleChart('chart_visa_status', v)}
-                  layout="vertical"
-                />
-              </ChartWrapper>
-            </div>
-
-            {/* Row 7: Package Name */}
-            <div className="chart-span-3">
-              <ChartWrapper title="عدد الحجاج حسب الباقة" height={270}>
-                <BarChart
-                  data={packageData}
-                  onSegmentClick={(v) => toggleChart('chart_package', v)}
-                  maxLabelLen={12}
-                />
-              </ChartWrapper>
-            </div>
-
-            {/* Row 8: Age Histogram */}
-            <div className="chart-span-3">
-              <ChartWrapper title="التوزيع العمري" height={260}>
-                <Histogram
-                  data={ageData}
-                  onSegmentClick={(v) => toggleChart('chart_age_bucket', v)}
-                />
-              </ChartWrapper>
-            </div>
-
-          </div>
-        </main>
-      </div>}
+          </main>
+        </div>
+      )}
     </div>
   );
 }

@@ -461,21 +461,23 @@ export function JourneyFlow() {
   }, [nodes, edges]);
 
   return (
-    <div className="journey-tree-wrap">
+    <div className="min-h-[620px] w-full shrink-0 overflow-hidden rounded-xl border border-border bg-gradient-to-b from-slate-50 to-[#f2f6fb]">
       {packagePages > 1 && (
-        <div className="journey-package-slider">
+        <div className="flex items-center justify-center gap-2.5 px-3 pt-2.5 pb-1">
           <button
-            className="journey-package-btn"
+            type="button"
+            className="cursor-pointer rounded-lg border border-border bg-white px-3 py-1 text-xs text-fg disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() => setPackagePage((p) => Math.max(0, p - 1))}
             disabled={packagePage === 0}
           >
             السابق
           </button>
-          <span className="journey-package-page">
+          <span className="text-xs font-semibold text-fg-secondary">
             الباقات: {packagePage + 1} / {packagePages}
           </span>
           <button
-            className="journey-package-btn"
+            type="button"
+            className="cursor-pointer rounded-lg border border-border bg-white px-3 py-1 text-xs text-fg disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() => setPackagePage((p) => Math.min(packagePages - 1, p + 1))}
             disabled={packagePage === packagePages - 1}
           >
@@ -484,12 +486,19 @@ export function JourneyFlow() {
         </div>
       )}
       <svg
-        className="journey-tree-svg"
+        className="block h-auto min-h-0 w-full min-w-0"
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         preserveAspectRatio="xMidYMid meet"
       >
         <g transform={`translate(20, ${rootY - 17})`}>
-          <rect x="0" y="0" width={sidePillW} height={sidePillH} rx="9" className="journey-stage-side-pill" />
+          <rect
+            x="0"
+            y="0"
+            width={sidePillW}
+            height={sidePillH}
+            rx="9"
+            className="fill-white stroke-[#b9d8c8] stroke-[1.5]"
+          />
           <foreignObject x="10" y="8" width="22" height="22">
             <div
               {...({
@@ -500,14 +509,26 @@ export function JourneyFlow() {
               <JourneyStageSideIconSvg type="hajj-root" />
             </div>
           </foreignObject>
-          <text x={sidePillTextCx} y="22" textAnchor="middle" className="journey-stage-side-pill-text">
+          <text
+            x={sidePillTextCx}
+            y="22"
+            textAnchor="middle"
+            className="fill-[#03542c] text-[11px] font-bold"
+          >
             بداية الحجاج
           </text>
         </g>
 
         {stages.map((stage, idx) => (
           <g key={stage.field} transform={`translate(20, ${firstStageY + idx * rowGap - 17})`}>
-            <rect x="0" y="0" width={sidePillW} height={sidePillH} rx="9" className="journey-stage-side-pill" />
+            <rect
+              x="0"
+              y="0"
+              width={sidePillW}
+              height={sidePillH}
+              rx="9"
+              className="fill-white stroke-[#b9d8c8] stroke-[1.5]"
+            />
             <foreignObject x="10" y="8" width="22" height="22">
               <div
                 {...({
@@ -518,23 +539,33 @@ export function JourneyFlow() {
                 <JourneyStageSideIconSvg type={stage.sideIcon} />
               </div>
             </foreignObject>
-            <text x={sidePillTextCx} y="22" textAnchor="middle" className="journey-stage-side-pill-text journey-stage-side-pill-text--stage">
+            <text
+              x={sidePillTextCx}
+              y="22"
+              textAnchor="middle"
+              className="fill-[#03542c] text-[9px] font-bold"
+            >
               {stage.title}
             </text>
           </g>
         ))}
 
         <g>
-          <circle cx={rootX} cy={rootY} r="34" className="journey-root-circle" />
-          <text x={rootX} y={rootY - 4} textAnchor="middle" className="journey-root-count">
+          <circle
+            cx={rootX}
+            cy={rootY}
+            r="34"
+            className="fill-primary stroke-2 stroke-white drop-shadow-[0_3px_8px_rgba(4,106,56,0.28)]"
+          />
+          <text x={rootX} y={rootY - 4} textAnchor="middle" className="fill-white text-xs font-extrabold">
             {totalPilgrims}
           </text>
-          <text x={rootX} y={rootY + 14} textAnchor="middle" className="journey-root-text">
+          <text x={rootX} y={rootY + 14} textAnchor="middle" className="fill-white/90 text-[10px] font-semibold">
             الحجاج
           </text>
         </g>
 
-        <g className="journey-edges">
+        <g>
           {edges.map((e) => {
             const strokeW = 0.9 + (e.value / maxEdge) * 3.3;
             const prevPath = prevEdgePathRef.current.get(e.id);
@@ -542,7 +573,7 @@ export function JourneyFlow() {
               <path
                 key={e.id}
                 d={e.pathD}
-                className={e.faded ? 'journey-edge is-faded' : 'journey-edge'}
+                className={e.faded ? 'fill-none stroke-[#5a84be] opacity-15' : 'fill-none stroke-[#5a84be] opacity-80'}
                 style={{ strokeWidth: strokeW }}
               >
                 {prevPath && prevPath !== e.pathD && (
@@ -562,7 +593,7 @@ export function JourneyFlow() {
           })}
         </g>
 
-        <g className="journey-nodes">
+        <g>
           {nodes.map((n) => (
             (() => {
               const shouldFade = !n.isSelected || n.value === 0;
@@ -570,7 +601,7 @@ export function JourneyFlow() {
             <g
               key={n.id}
               transform={`translate(${n.x}, ${n.y})`}
-              className={shouldFade ? 'journey-node-g is-faded' : 'journey-node-g'}
+              className={shouldFade ? 'cursor-pointer opacity-30 transition-opacity duration-150 ease-out' : 'cursor-pointer transition-opacity duration-150 ease-out'}
               onClick={() => toggleNode(n.filterKey, n.label)}
               role="button"
             >
@@ -594,9 +625,19 @@ export function JourneyFlow() {
                 );
               })()}
               {n.isActiveFiltered && n.value > 0 && (
-                <circle cx="0" cy="0" r="46" className="journey-node-active-ring" />
+                <circle
+                  cx="0"
+                  cy="0"
+                  r="46"
+                  className="pointer-events-none fill-none stroke-[#03542c] stroke-[3] opacity-95 [stroke-dasharray:16_10] [stroke-linecap:round] [transform-origin:center] animate-[journey-node-ring-spin_1.8s_linear_infinite]"
+                />
               )}
-              <circle cx="0" cy="0" r="40" className="journey-node-circle" />
+              <circle
+                cx="0"
+                cy="0"
+                r="40"
+                className="fill-primary stroke-2 stroke-white drop-shadow-[0_3px_7px_rgba(4,106,56,0.3)]"
+              />
               {(() => {
                 const isHotelNode =
                   n.field === 'first_stop_name' ||
@@ -614,7 +655,11 @@ export function JourneyFlow() {
                     x="0"
                     y={startY}
                     textAnchor="middle"
-                    className={`journey-node-main-text${isHotelNode ? ' is-wrap' : ''}`}
+                    className={
+                      isHotelNode
+                        ? 'pointer-events-none fill-white text-[8.6px] font-semibold'
+                        : 'pointer-events-none fill-white text-[10px] font-bold'
+                    }
                   >
                     {lines.map((line, idx) => (
                       <tspan key={`${n.id}-${idx}`} x="0" dy={idx === 0 ? 0 : 10}>
@@ -624,7 +669,7 @@ export function JourneyFlow() {
                   </text>
                 );
               })()}
-              <text x="0" y="22" textAnchor="middle" className="journey-node-sub-text">
+              <text x="0" y="22" textAnchor="middle" className="pointer-events-none fill-white text-[10px] font-bold">
                 {n.value}
               </text>
             </g>

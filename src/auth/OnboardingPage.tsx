@@ -1,12 +1,17 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { supabase } from '../core/supabaseClient';
-import '../styles/auth.css';
+import { cn } from '../lib/cn';
 
 interface OnboardingPageProps {
   userId: string;
   initialName: string;
   initialAvatarUrl: string | null;
-  onFinish: (payload: { name: string; avatar_url: string | null; position: string | null; phone: string | null }) => Promise<void>;
+  onFinish: (payload: {
+    name: string;
+    avatar_url: string | null;
+    position: string | null;
+    phone: string | null;
+  }) => Promise<void>;
 }
 
 export default function OnboardingPage({
@@ -40,7 +45,7 @@ export default function OnboardingPage({
   const handleFinish = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!name.trim()) {
       setError('الرجاء إدخال اسمك لنتمكن من التعرف عليك');
       return;
@@ -53,25 +58,23 @@ export default function OnboardingPage({
       if (file) {
         const ext = file.name.split('.').pop() ?? 'jpg';
         const path = `${userId}.${ext}`;
-        const { error: uploadErr } = await supabase.storage
-          .from('avatars')
-          .upload(path, file, { upsert: true, contentType: file.type });
+        const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, {
+          upsert: true,
+          contentType: file.type,
+        });
 
         if (uploadErr) throw uploadErr;
 
-        const { data: urlData } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(path);
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
         finalAvatarUrl = urlData.publicUrl + '?t=' + Date.now();
       }
 
-      await onFinish({ 
-        name: name.trim(), 
+      await onFinish({
+        name: name.trim(),
         avatar_url: finalAvatarUrl,
         position: position.trim() || null,
-        phone: phone.trim() ? `+966${phone.trim()}` : null
+        phone: phone.trim() ? `+966${phone.trim()}` : null,
       });
-      
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'حدث خطأ أثناء حفظ البيانات';
       setError(msg);
@@ -80,47 +83,45 @@ export default function OnboardingPage({
   };
 
   return (
-    <div className="onboarding-screen">
-      <div className="onboarding-card">
-        <div className="onboarding-header">
-          <div className="onboarding-logo-wrap">
-            <img src="/logo.jpg" alt="Logo" className="onboarding-logo" />
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-5">
+      <div className="w-full max-w-[500px] rounded-[20px] border border-border bg-white p-10 text-center shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)]">
+        <div className="mb-6">
+          <div className="mx-auto mb-6 h-16 w-16 overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+            <img src="/logo.jpg" alt="Logo" className="h-full w-full object-cover" />
           </div>
-          <h1 className="onboarding-title">أهلاً بك! 👋</h1>
-          <p className="onboarding-subtitle">لنقم بإكمال بيانات ملفك الشخصي</p>
+          <h1 className="mb-2 text-2xl font-extrabold text-fg">أهلاً بك! 👋</h1>
+          <p className="text-[15px] text-fg-secondary">لنقم بإكمال بيانات ملفك الشخصي</p>
         </div>
 
-        <form onSubmit={handleFinish} className="onboarding-form">
-          
-          {/* Avatar Selection */}
-          <div className="onboarding-avatar-section">
+        <form onSubmit={handleFinish} className="text-right">
+          <div className="mb-8 flex flex-col items-center gap-3">
             <button
               type="button"
-              className="onboarding-avatar-btn"
+              className="relative h-24 w-24 cursor-pointer overflow-hidden rounded-full border-2 border-dashed border-gray-300 bg-page p-0 transition-all hover:border-primary hover:bg-primary-pale"
               onClick={() => inputRef.current?.click()}
             >
               {preview ? (
-                <img src={preview} alt="Avatar" className="onboarding-avatar-img" />
+                <img src={preview} alt="Avatar" className="h-full w-full object-cover" />
               ) : (
-                <div className="onboarding-avatar-placeholder">
+                <div className="flex h-full w-full items-center justify-center text-gray-400">
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                 </div>
               )}
-              <div className="onboarding-avatar-badge">
+              <div className="absolute bottom-1.5 end-1.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-primary">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                  <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </button>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-              <span className="onboarding-avatar-label">صورة شخصية (اختياري)</span>
+            <div className="flex flex-col items-center gap-2">
+              <span className="cursor-pointer text-[13px] font-semibold text-primary">صورة شخصية (اختياري)</span>
               {preview && (
-                <button 
-                  type="button" 
-                  className="avatar-remove-btn"
+                <button
+                  type="button"
+                  className="cursor-pointer rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-800 transition-colors hover:border-red-300 hover:bg-red-100"
                   onClick={() => {
                     setPreview(null);
                     setFile(null);
@@ -130,22 +131,17 @@ export default function OnboardingPage({
                 </button>
               )}
             </div>
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
+            <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           </div>
 
-          {/* Form Fields */}
-          <div className="onboarding-fields">
-            <div className="form-group">
-              <label className="field-label">الاسم الكامل</label>
+          <div className="mb-8 flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-semibold text-fg-secondary">الاسم الكامل</label>
               <input
-                className="field-input big-input"
+                className={cn(
+                  'rounded-lg border border-border bg-gray-50 px-4 py-3.5 font-sans text-base text-fg transition-all',
+                  'focus:border-primary focus:bg-white focus:shadow-[0_0_0_3px_#e8f5ee] focus:outline-none',
+                )}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="مثال: محمد أحمد"
@@ -153,35 +149,38 @@ export default function OnboardingPage({
               />
             </div>
 
-            <div className="form-group">
-              <label className="field-label">المسمى الوظيفي (اختياري)</label>
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-semibold text-fg-secondary">المسمى الوظيفي (اختياري)</label>
               <input
-                className="field-input big-input"
+                className={cn(
+                  'rounded-lg border border-border bg-gray-50 px-4 py-3.5 font-sans text-base text-fg transition-all',
+                  'focus:border-primary focus:bg-white focus:shadow-[0_0_0_3px_#e8f5ee] focus:outline-none',
+                )}
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
                 placeholder="مثال: مدير العمليات"
               />
             </div>
 
-            <div className="form-group">
-              <label className="field-label">رقم الجوال (اختياري)</label>
-              <div className="phone-input-wrap">
-                <div className="phone-prefix">
-                  <img 
-                    src="https://flagcdn.com/w20/sa.png" 
-                    srcSet="https://flagcdn.com/w40/sa.png 2x" 
-                    width="20" 
-                    alt="Saudi Arabia" 
-                    style={{ borderRadius: '2px' }}
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-semibold text-fg-secondary">رقم الجوال (اختياري)</label>
+              <div className="flex items-center overflow-hidden rounded-lg border border-border-strong bg-white transition-all focus-within:border-primary focus-within:shadow-[0_0_0_3px_#e8f5ee]">
+                <div className="flex h-full items-center gap-1.5 border-s border-border bg-slate-50 px-3 text-sm font-semibold text-fg ltr:flex-row">
+                  <img
+                    src="https://flagcdn.com/w20/sa.png"
+                    srcSet="https://flagcdn.com/w40/sa.png 2x"
+                    width="20"
+                    alt="Saudi Arabia"
+                    className="rounded-sm"
                   />
                   <span dir="ltr">+966</span>
                 </div>
                 <input
                   type="tel"
-                  className="field-input big-input phone-field"
+                  className="flex-1 border-none bg-transparent px-3 py-3.5 font-sans text-base text-fg shadow-none outline-none ltr:text-left"
                   value={phone}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, ''); // Allow numbers only
+                    const val = e.target.value.replace(/\D/g, '');
                     setPhone(val);
                   }}
                   placeholder="5xxxxxxxx"
@@ -191,9 +190,13 @@ export default function OnboardingPage({
             </div>
           </div>
 
-          {error && <div className="onboarding-error">{error}</div>}
+          {error && <div className="mb-5 rounded-lg bg-red-50 px-2.5 py-2.5 text-[13px] font-semibold text-red-500">{error}</div>}
 
-          <button type="submit" className="onboarding-submit-btn" disabled={isSaving}>
+          <button
+            type="submit"
+            className="w-full cursor-pointer rounded-xl border-none bg-primary py-3.5 font-sans text-base font-bold text-white shadow-[0_4px_12px_rgba(4,106,56,0.2)] transition-all hover:bg-primary-dark enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_8px_16px_rgba(4,106,56,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSaving}
+          >
             {isSaving ? 'جاري الحفظ...' : 'حفظ ومتابعة ←'}
           </button>
         </form>

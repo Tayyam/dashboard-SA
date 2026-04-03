@@ -11,6 +11,7 @@ import { BarChart } from './charts/BarChart';
 import { PieChart } from './charts/PieChart';
 import { Histogram } from './charts/Histogram';
 import { JourneyPage } from './journey/JourneyPage';
+import { ReportsPage } from './reports/ReportsPage';
 import AuthPage from './auth/AuthPage';
 import { PendingApprovalPage } from './auth/PendingApprovalPage';
 import OnboardingPage from './auth/OnboardingPage';
@@ -21,7 +22,7 @@ import { ensureUserAndApproval, type AppRole, type ApprovalStatus } from './core
 import type { Filters } from './core/types';
 import { formatJourneyAirportCode } from './core/airportDisplay';
 
-type Page = 'dashboard' | 'journey' | 'approvals' | 'profile';
+type Page = 'dashboard' | 'journey' | 'approvals' | 'profile' | 'reports';
 type ProfilePayload = {
   name: string;
   avatar_url: string | null;
@@ -280,6 +281,7 @@ export default function App() {
   const isDashboard = page === 'dashboard';
   const isJourney   = page === 'journey';
   const isApprovals = page === 'approvals';
+  const isReports   = page === 'reports';
 
   return (
     <div className="app-shell">
@@ -290,11 +292,15 @@ export default function App() {
             <div className="header-logo-wrap">
               <img src="/logo.jpg" alt="Logo" className="header-logo-img" />
             </div>
-            {isDashboard && (
+            {(isDashboard || isReports) && (
               <div className="header-texts">
-                <h1 className="header-title">لوحة المعلومات التنفيذية</h1>
+                <h1 className="header-title">
+                  {isReports ? 'التقارير' : 'لوحة المعلومات التنفيذية'}
+                </h1>
                 <div className="header-sub-row">
-                  <span className="header-subtitle">تحليلات بيانات الحجاج</span>
+                  <span className="header-subtitle">
+                    {isReports ? 'تقارير أنواع الباقات والبيانات' : 'تحليلات بيانات الحجاج'}
+                  </span>
                   <span className="header-date">
                     {new Date().toLocaleDateString('ar-SA', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
@@ -315,6 +321,12 @@ export default function App() {
             onClick={() => setPage('journey')}
           >
             مسار الرحلة
+          </button>
+          <button
+            className={`header-nav-tab${isReports ? ' active' : ''}`}
+            onClick={() => setPage('reports')}
+          >
+            التقارير
           </button>
           {isAdmin && (
             <button
@@ -349,14 +361,10 @@ export default function App() {
               <path d="M15 7l5 5-5 5M20 12H9M12 4H6a2 2 0 00-2 2v12a2 2 0 002 2h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-          {isDashboard && (
-            <>
-              {hasAnyFilter && (
-                <button className="clear-all-btn" onClick={clearAll}>
-                  مسح جميع الفلاتر
-                </button>
-              )}
-            </>
+          {isDashboard && hasAnyFilter && (
+            <button className="clear-all-btn" onClick={clearAll}>
+              مسح جميع الفلاتر
+            </button>
           )}
         </div>
       </header>
@@ -375,6 +383,7 @@ export default function App() {
 
       {isJourney && <JourneyPage />}
       {isApprovals && isAdmin && <ApprovalsPage adminUserId={session.user.id} />}
+      {isReports && <ReportsPage />}
 
       {isDashboard && <div className="main-layout">
         {/* ── Sidebar ──────────────────────────────────────────── */}

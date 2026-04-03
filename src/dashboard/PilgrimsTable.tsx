@@ -44,6 +44,7 @@ export function PilgrimsTable({
         p.group_id.toLowerCase().includes(q) ||
         p.name.toLowerCase().includes(q) ||
         p.nationality.toLowerCase().includes(q) ||
+        p.package_id.toLowerCase().includes(q) ||
         p.package.toLowerCase().includes(q) ||
         p.guide_name.toLowerCase().includes(q) ||
         p.booking_id.toLowerCase().includes(q)
@@ -110,13 +111,14 @@ export function PilgrimsTable({
               <th>بلد الإقامة</th>
               <th>الجنسية</th>
               <th>داخل المملكة</th>
+              <th>نوع الباقة (package type)</th>
               <th>اسم الباقة</th>
             </tr>
           </thead>
           <tbody>
             {slice.length === 0 ? (
               <tr>
-                <td colSpan={11} className="pilgrims-table-empty">لا توجد نتائج</td>
+                <td colSpan={12} className="pilgrims-table-empty">لا توجد نتائج</td>
               </tr>
             ) : (
               slice.map((p) => (
@@ -135,6 +137,7 @@ export function PilgrimsTable({
                   <td>{p.residence_country || '—'}</td>
                   <td>{p.nationality || '—'}</td>
                   <td>{p.inside_kingdom ? 'نعم' : 'لا'}</td>
+                  <td className="pilgrims-table-num">{p.package_id?.trim() || '—'}</td>
                   <td>{p.package || '—'}</td>
                 </tr>
               ))

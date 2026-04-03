@@ -9,7 +9,9 @@ export interface Pilgrim {
   guide_name: string;
   residence_country: string;
   nationality: string;
+  /** نوع الباقة (package type): T1–T5 أو رمز مثل A01، G01… — يُقرأ من عمود package_type في الإكسل */
   package_id: string;
+  /** اسم/وصف الباقة */
   package: string;
   arrival_city: string;
   departure_city: string;

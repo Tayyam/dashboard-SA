@@ -10,6 +10,7 @@ import './styles/profile.css';
 import './styles/layout.css';
 import './styles/dashboard.css';
 import './styles/journey.css';
+import './styles/reports.css';
 import App from './App';
 
 createRoot(document.getElementById('app')!).render(

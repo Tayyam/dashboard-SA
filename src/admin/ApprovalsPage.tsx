@@ -73,6 +73,11 @@ const PILGRIMS_COLUMNS = [
   'updated_at',
 ] as const;
 
+function pilgrimPreviewColumnLabel(col: string): string {
+  if (col === 'package_id') return 'package type';
+  return col;
+}
+
 /* ── Status helpers ────────────────────────────────────────────── */
 const STATUS_LABEL: Record<AccountStatus, string> = {
   pending:  'معلّق',
@@ -747,7 +752,7 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
                 <thead>
                   <tr>
                     {PILGRIMS_COLUMNS.map((col) => (
-                      <th key={col}>{col}</th>
+                      <th key={col}>{pilgrimPreviewColumnLabel(col)}</th>
                     ))}
                   </tr>
                 </thead>

@@ -3,6 +3,7 @@ import { supabase } from '../core/supabaseClient';
 import { cn } from '../lib/cn';
 import type { UserProfileRow } from '../core/authAccess';
 import { pilgrimFromRow, pilgrimToDbInsert, stripNullInsertFields } from '../core/pilgrimFromRow';
+import { usePilgrimsData } from '../store/usePilgrimsData';
 import * as XLSX from 'xlsx';
 
 interface ApprovalsPageProps {
@@ -415,7 +416,7 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
 
     try {
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
+      const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
       const mainSheet = workbook.Sheets.main;
       if (!mainSheet) {
         throw new Error('لم يتم العثور على sheet باسم main داخل ملف الإكسل.');
@@ -468,11 +469,18 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
         await loadPilgrimsPreview(1);
       }
       const droppedDuplicates = pilgrimsPayload.length - dedupedPilgrimsPayload.length;
-      setUploadInfo(
+      const baseMsg =
         droppedDuplicates > 0
           ? `تم تحديث جدول الحجاج بنجاح (${dedupedPilgrimsPayload.length.toLocaleString()} سجل) مع حذف ${droppedDuplicates.toLocaleString()} سجل مكرر في nusuk_id.`
-          : `تم تحديث جدول الحجاج بنجاح (${dedupedPilgrimsPayload.length.toLocaleString()} سجل).`,
-      );
+          : `تم تحديث جدول الحجاج بنجاح (${dedupedPilgrimsPayload.length.toLocaleString()} سجل).`;
+      try {
+        await usePilgrimsData.getState().refresh();
+        setUploadInfo(baseMsg);
+      } catch {
+        setUploadInfo(
+          `${baseMsg} إذا بقيت التقارير بدون رقم الرحلة/الوقت، حدّث الصفحة (F5) أو تأكد من تطبيق هجرة أعمدة pilgrims (arrival_flight_number, arrival_time).`,
+        );
+      }
     } catch (err) {
       setError(formatSupabaseError(err));
     } finally {

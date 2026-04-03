@@ -107,19 +107,6 @@ function formatTimeCellValue(v: unknown): string {
   return '';
 }
 
-/** وقت من Excel: Date / كسر يوم / نص */
-function pickTimeFromRow(row: Record<string, unknown>, keys: string[]): string {
-  for (const k of keys) {
-    if (!(k in row)) continue;
-    const v = row[k];
-    const fromDate = formatTimeCellValue(v);
-    if (fromDate) return fromDate;
-    const t = toText(v);
-    if (t) return t;
-  }
-  return '';
-}
-
 function toNum(v: unknown): number {
   const n = Number(v ?? 0);
   return Number.isFinite(n) ? n : 0;
@@ -278,7 +265,7 @@ export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pil
     last_exit_place: pickStr(row, ['last_exit_place', 'آخر مكان خروج']),
     departure_airport: pickStr(row, ['departure_airport', 'مطار المغادرة']),
     /** القالب الشائع: Dep_Flight = رحلة الوصول، Ret_Flight = رحلة العودة (لا تضع Dep_Flight تحت المغادرة) */
-    arrival_flight_number: pickStr(row, [
+    arrival_flight_number: pickStrFlexible(row, [
       'Dep_Flight',
       'dep_flight',
       'arrival_flight_number',
@@ -291,7 +278,7 @@ export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pil
       'رقم_رحلة_الوصول',
       'رقم رحلة الوصول',
     ]),
-    arrival_time: pickTimeFromRow(row, [
+    arrival_time: pickTimeFlexible(row, [
       'Dep_Arr_Time',
       'dep_arr_time',
       'arrival_time',
@@ -300,7 +287,7 @@ export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pil
       'وقت_الوصول',
       'وقت الوصول',
     ]),
-    departure_flight_number: pickStr(row, [
+    departure_flight_number: pickStrFlexible(row, [
       'Ret_Flight',
       'ret_flight',
       'departure_flight_number',

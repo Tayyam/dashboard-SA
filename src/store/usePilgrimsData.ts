@@ -66,7 +66,7 @@ export const usePilgrimsData = create<PilgrimsDataState>((set, get) => ({
     } catch (err) {
       set({
         loading: false,
-        loaded: false,
+        loaded: true,
         error: err instanceof Error ? err.message : 'فشل تحديث بيانات الحجاج من Supabase',
       });
     }

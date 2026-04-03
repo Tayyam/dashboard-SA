@@ -4,20 +4,26 @@ import { JourneyFlow } from './JourneyFlow';
 import { PilgrimsTable } from '../dashboard/PilgrimsTable';
 import { useJourneyData } from '../store/useJourneyData';
 import type { JourneyFilters } from '../core/journeyFilterEngine';
+import { formatJourneyAirportCode } from './journeyDisplay';
 
 const NODE_LABELS: Partial<Record<keyof JourneyFilters, string>> = {
   node_package: 'الباقة',
   node_arrival_date: 'تاريخ الوصول',
-  node_arrival_city: 'مدينة الوصول',
-  node_first_stop_name: 'التوقف 1',
-  node_first_stop_check_out: 'مغادرة 1',
-  node_second_stop_name: 'التوقف 2',
-  node_second_stop_check_out: 'مغادرة 2',
-  node_third_stop_name: 'التوقف 3',
-  node_third_stop_check_out: 'مغادرة 3',
-  node_departure_city: 'مدينة المغادرة',
+  node_arrival_city: 'مطار مدينة الوصول',
+  node_first_stop_name: 'التوقف الأول',
+  node_first_stop_check_out: 'مغادرة مكان التوقف الأول',
+  node_second_stop_name: 'التوقف الثاني',
+  node_second_stop_check_out: 'مغادرة مكان التوقف الثاني',
+  node_third_stop_name: 'التوقف الثالث',
+  node_third_stop_check_out: 'مغادرة مكان التوقف الثالث',
+  node_departure_city: 'مطار مدينة المغادرة',
   node_departure_date: 'تاريخ المغادرة',
 };
+
+function formatJourneyBadgeValue(key: keyof JourneyFilters, value: string): string {
+  if (key === 'node_arrival_city' || key === 'node_departure_city') return formatJourneyAirportCode(value);
+  return value;
+}
 
 const NODE_KEYS = Object.keys(NODE_LABELS) as (keyof JourneyFilters)[];
 
@@ -34,7 +40,7 @@ function ActiveBadges() {
             className="filter-badge"
             onClick={() => toggle(k, filters[k]!)}
           >
-            {NODE_LABELS[k]}: <strong>{filters[k]}</strong> x
+            {NODE_LABELS[k]}: <strong>{formatJourneyBadgeValue(k, filters[k]!)}</strong> x
           </button>
         ))}
       </div>
@@ -57,9 +63,15 @@ export function JourneyPage() {
     <div className="journey-page-wrap">
       <div className="journey-page-header">
         <div className="journey-page-header-left">
-          <span className="journey-page-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M3 12h18M3 6h18M3 18h12" stroke="#046A38" strokeWidth="2" strokeLinecap="round"/>
+          <span className="journey-page-icon" title="مسار الرحلة">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M4 14h5l2.5-2.5 6 1.5 1.5-1.5-4.5-2-1-3.5M12 15l-1.5 3M20 10h-5l-2.5 2.5-6-1.5-1.5 1.5 4.5 2 1 3.5M12 9l1.5-3"
+                stroke="#046A38"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </span>
           <h2 className="journey-page-title">مسار رحلة الحجاج</h2>

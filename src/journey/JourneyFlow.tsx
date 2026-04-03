@@ -3,6 +3,8 @@ import { useJourneyData } from '../store/useJourneyData';
 import { useJourneyFilters } from '../store/useJourneyFilters';
 import type { Pilgrim } from '../core/types';
 import { thirdStopChartLabel } from '../core/aggregationEngine';
+import { formatJourneyAirportCode } from './journeyDisplay';
+import { JourneyStageSideIconSvg, type JourneyStageSideIcon } from './JourneyStageIcons';
 
 interface LayerItem {
   label: string;
@@ -52,6 +54,13 @@ interface StageDef {
   filterKey: NodeFilterKey;
   isDate?: boolean;
   data: LayerItem[];
+  sideIcon: JourneyStageSideIcon;
+}
+
+function nodeCaptionLabel(field: StageField, raw: string, isDate?: boolean): string {
+  if (isDate) return fmtDateDdMm(raw);
+  if (field === 'arrival_city' || field === 'departure_city') return formatJourneyAirportCode(raw);
+  return raw;
 }
 
 interface TreeNode {
@@ -216,6 +225,7 @@ export function JourneyFlow() {
       title: 'الباقة',
       field: 'package',
       filterKey: 'node_package',
+      sideIcon: 'package',
       data: pagedPackageData,
     },
     {
@@ -223,25 +233,29 @@ export function JourneyFlow() {
       field: 'arrival_date',
       filterKey: 'node_arrival_date',
       isDate: true,
+      sideIcon: 'calendar',
       data: getStableStageItems('arrival_date', 'node_arrival_date', arrivalDateData, 7, true),
     },
     {
-      title: 'مدينة الوصول',
+      title: 'مطار مدينة الوصول',
       field: 'arrival_city',
       filterKey: 'node_arrival_city',
+      sideIcon: 'plane-in',
       data: getStableStageItems('arrival_city', 'node_arrival_city', arrivalCityData, 6),
     },
     {
-      title: 'التوقف 1',
+      title: 'التوقف الأول',
       field: 'first_stop_name',
       filterKey: 'node_first_stop_name',
+      sideIcon: 'stop',
       data: getStableStageItems('first_stop_name', 'node_first_stop_name', firstStopNameData, 7),
     },
     {
-      title: 'مغادرة 1',
+      title: 'مغادرة مكان التوقف الأول',
       field: 'first_stop_check_out',
       filterKey: 'node_first_stop_check_out',
       isDate: true,
+      sideIcon: 'leave-stop',
       data: getStableStageItems(
         'first_stop_check_out',
         'node_first_stop_check_out',
@@ -251,16 +265,18 @@ export function JourneyFlow() {
       ),
     },
     {
-      title: 'التوقف 2',
+      title: 'التوقف الثاني',
       field: 'second_stop_name',
       filterKey: 'node_second_stop_name',
+      sideIcon: 'stop',
       data: getStableStageItems('second_stop_name', 'node_second_stop_name', secondStopNameData, 7),
     },
     {
-      title: 'مغادرة 2',
+      title: 'مغادرة مكان التوقف الثاني',
       field: 'second_stop_check_out',
       filterKey: 'node_second_stop_check_out',
       isDate: true,
+      sideIcon: 'leave-stop',
       data: getStableStageItems(
         'second_stop_check_out',
         'node_second_stop_check_out',
@@ -270,16 +286,18 @@ export function JourneyFlow() {
       ),
     },
     {
-      title: 'التوقف 3',
+      title: 'التوقف الثالث',
       field: 'third_stop_name',
       filterKey: 'node_third_stop_name',
+      sideIcon: 'stop',
       data: getStableStageItems('third_stop_name', 'node_third_stop_name', thirdStopNameData, 7),
     },
     {
-      title: 'مغادرة 3',
+      title: 'مغادرة مكان التوقف الثالث',
       field: 'third_stop_check_out',
       filterKey: 'node_third_stop_check_out',
       isDate: true,
+      sideIcon: 'leave-stop',
       data: getStableStageItems(
         'third_stop_check_out',
         'node_third_stop_check_out',
@@ -289,9 +307,10 @@ export function JourneyFlow() {
       ),
     },
     {
-      title: 'مدينة المغادرة',
+      title: 'مطار مدينة المغادرة',
       field: 'departure_city',
       filterKey: 'node_departure_city',
+      sideIcon: 'plane-out',
       data: getStableStageItems('departure_city', 'node_departure_city', departureCityData, 6),
     },
     {
@@ -299,6 +318,7 @@ export function JourneyFlow() {
       field: 'departure_date',
       filterKey: 'node_departure_date',
       isDate: true,
+      sideIcon: 'calendar',
       data: getStableStageItems('departure_date', 'node_departure_date', departureDateData, 7, true),
     },
   ];
@@ -306,7 +326,11 @@ export function JourneyFlow() {
   const colGap = 180;
   const rowGap = 120;
   const firstStageY = 180;
-  const headerColWidth = 150;
+  const headerColWidth = 248;
+  const sidePillW = 236;
+  const sidePillH = 34;
+  /** مركز نص الشريط الجانبي (بعد مساحة الأيقونة) */
+  const sidePillTextCx = Math.round(sidePillW * 0.58);
   const contentPad = 80;
   const stageMaxCount = Math.max(...stages.map((s) => s.data.length), 1);
   const contentWidth = Math.max(920, stageMaxCount * colGap + contentPad * 2);
@@ -464,17 +488,37 @@ export function JourneyFlow() {
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         preserveAspectRatio="xMidYMid meet"
       >
-        <g transform={`translate(20, ${rootY - 16})`}>
-          <rect x="0" y="0" width="126" height="32" rx="9" className="journey-stage-side-pill" />
-          <text x="63" y="20" textAnchor="middle" className="journey-stage-side-pill-text">
+        <g transform={`translate(20, ${rootY - 17})`}>
+          <rect x="0" y="0" width={sidePillW} height={sidePillH} rx="9" className="journey-stage-side-pill" />
+          <foreignObject x="10" y="8" width="22" height="22">
+            <div
+              {...({
+                xmlns: 'http://www.w3.org/1999/xhtml',
+                style: { display: 'flex', lineHeight: 0 },
+              } as Record<string, unknown>)}
+            >
+              <JourneyStageSideIconSvg type="hajj-root" />
+            </div>
+          </foreignObject>
+          <text x={sidePillTextCx} y="22" textAnchor="middle" className="journey-stage-side-pill-text">
             بداية الحجاج
           </text>
         </g>
 
         {stages.map((stage, idx) => (
-          <g key={stage.field} transform={`translate(20, ${firstStageY + idx * rowGap - 16})`}>
-            <rect x="0" y="0" width="126" height="32" rx="9" className="journey-stage-side-pill" />
-            <text x="63" y="20" textAnchor="middle" className="journey-stage-side-pill-text">
+          <g key={stage.field} transform={`translate(20, ${firstStageY + idx * rowGap - 17})`}>
+            <rect x="0" y="0" width={sidePillW} height={sidePillH} rx="9" className="journey-stage-side-pill" />
+            <foreignObject x="10" y="8" width="22" height="22">
+              <div
+                {...({
+                  xmlns: 'http://www.w3.org/1999/xhtml',
+                  style: { display: 'flex', lineHeight: 0 },
+                } as Record<string, unknown>)}
+              >
+                <JourneyStageSideIconSvg type={stage.sideIcon} />
+              </div>
+            </foreignObject>
+            <text x={sidePillTextCx} y="22" textAnchor="middle" className="journey-stage-side-pill-text journey-stage-side-pill-text--stage">
               {stage.title}
             </text>
           </g>
@@ -558,11 +602,12 @@ export function JourneyFlow() {
                   n.field === 'first_stop_name' ||
                   n.field === 'second_stop_name' ||
                   n.field === 'third_stop_name';
+                const cap = nodeCaptionLabel(n.field, n.label, n.isDate);
                 const lines = n.isDate
-                  ? [fmtDateDdMm(n.label)]
+                  ? [cap]
                   : isHotelNode
-                    ? wrapTextByWords(n.label, 10, 2)
-                    : [shortText(n.label, 14)];
+                    ? wrapTextByWords(cap, 10, 2)
+                    : [shortText(cap, 14)];
                 const startY = lines.length === 1 ? -8 : -18;
                 return (
                   <text

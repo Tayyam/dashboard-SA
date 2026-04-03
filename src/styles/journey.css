@@ -279,6 +279,11 @@
   fill: #03542c;
 }
 
+/* عناوين مراحل أطول (مغادرة مكان التوقف …) */
+.journey-stage-side-pill-text--stage {
+  font-size: 9px;
+}
+
 .journey-root-circle {
   fill: var(--primary);
   stroke: #ffffff;

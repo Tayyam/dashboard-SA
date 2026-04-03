@@ -21,6 +21,8 @@ interface BarChartProps {
   color?: string;
   layout?: 'vertical' | 'horizontal';
   maxLabelLen?: number;
+  /** مفتاح التسمية على المحور (الافتراضي label)؛ استخدم axisLabel لعرض مطار جدة/المدينة مع إبقاء الفلتر على الرمز */
+  categoryKey?: 'label' | 'axisLabel';
 }
 
 const PRIMARY     = '#046A38';
@@ -37,8 +39,10 @@ export function BarChart({
   color = PRIMARY,
   layout = 'horizontal',
   maxLabelLen = 14,
+  categoryKey = 'label',
 }: BarChartProps) {
   const hasFilter = data.some((d) => !d.isSelected);
+  const catKey = categoryKey;
 
   const getColor = (point: ChartDataPoint) => {
     if (!hasFilter) return color;
@@ -48,8 +52,9 @@ export function BarChart({
   const getOpacity = (point: ChartDataPoint) =>
     !hasFilter || point.isSelected ? 1 : 0.45;
 
-  const handleClick = (payload: unknown) => {
-    const item = payload as ChartDataPoint;
+  const handleClick = (data: unknown) => {
+    const d = data as ChartDataPoint & { payload?: ChartDataPoint };
+    const item = d.payload ?? d;
     if (item?.label) onSegmentClick(item.label);
   };
 
@@ -71,11 +76,11 @@ export function BarChart({
           />
           <YAxis
             type="category"
-            dataKey="label"
+            dataKey={catKey}
             tick={{ fill: '#475569', fontSize: 11 }}
             axisLine={false}
             tickLine={false}
-            width={125}
+            width={catKey === 'axisLabel' ? 140 : 125}
             tickFormatter={(v) => truncate(String(v), maxLabelLen)}
           />
           <Tooltip
@@ -115,7 +120,7 @@ export function BarChart({
       >
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
         <XAxis
-          dataKey="label"
+          dataKey={catKey}
           tick={{ fill: '#475569', fontSize: 10 }}
           axisLine={false}
           tickLine={false}

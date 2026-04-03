@@ -9,6 +9,7 @@ import {
 } from '../core/aggregationEngine';
 import { useFilters } from './useFilters';
 import { DIMENSIONS } from '../core/dimensions';
+import { formatJourneyAirportCode } from '../core/airportDisplay';
 import { usePilgrimsData } from './usePilgrimsData';
 
 const ZERO_ROOMS = { triple: 0, double: 0, quad: 0 };
@@ -43,7 +44,11 @@ export function useDashboardData() {
 
   const arrivalCityData = useMemo(() => {
     const agg = aggregate(groupBy(filteredData, DIMENSIONS.ARRIVAL_CITY as never), 'count');
-    return toChartData(agg, filters.chart_arrival_city);
+    const points = toChartData(agg, filters.chart_arrival_city);
+    return points.map((p) => ({
+      ...p,
+      axisLabel: formatJourneyAirportCode(p.label),
+    }));
   }, [filteredData, filters.chart_arrival_city]);
 
   const arrivalDateData = useMemo(() => {

@@ -4,6 +4,7 @@ import { thirdStopChartLabel } from '../core/aggregationEngine';
 import { DateRangeSlider } from './DateRangeSlider';
 import type { JourneyFilters } from '../core/journeyFilterEngine';
 import { usePilgrimsData } from '../store/usePilgrimsData';
+import { formatJourneyAirportCode } from './journeyDisplay';
 
 function unique(arr: string[]) {
   const invalid = new Set(['', 'null', 'undefined', 'nan']);
@@ -20,10 +21,12 @@ function SelectFilter({
   label,
   filterKey,
   options,
+  formatOption,
 }: {
   label: string;
   filterKey: keyof JourneyFilters;
   options: string[];
+  formatOption?: (raw: string) => string;
 }) {
   const value = useJourneyFilters((s) => s.filters[filterKey]) as string | null;
   const set = useJourneyFilters((s) => s.setSidebarFilter);
@@ -37,7 +40,9 @@ function SelectFilter({
       >
         <option value="">الكل</option>
         {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
+          <option key={o} value={o}>
+            {formatOption ? formatOption(o) : o}
+          </option>
         ))}
       </select>
     </div>
@@ -128,29 +133,31 @@ export function JourneySidebarFilters() {
         />
 
         <SelectFilter
-          label="مدينة الوصول"
+          label="مطار مدينة الوصول"
           filterKey="dropdown_arrival_city"
           options={unique(data.map((p) => p.arrival_city))}
+          formatOption={formatJourneyAirportCode}
         />
         <SelectFilter
-          label="التوقف 1 (اسم)"
+          label="التوقف الأول (اسم)"
           filterKey="dropdown_first_stop"
           options={unique(data.map((p) => p.first_stop_name))}
         />
         <SelectFilter
-          label="التوقف 2 (اسم)"
+          label="التوقف الثاني (اسم)"
           filterKey="dropdown_second_stop"
           options={unique(data.map((p) => p.second_stop_name))}
         />
         <SelectFilter
-          label="التوقف 3 (اسم)"
+          label="التوقف الثالث (اسم)"
           filterKey="dropdown_third_stop"
           options={unique(data.map((p) => thirdStopChartLabel(p)))}
         />
         <SelectFilter
-          label="مدينة المغادرة"
+          label="مطار مدينة المغادرة"
           filterKey="dropdown_departure_city"
           options={unique(data.map((p) => p.departure_city))}
+          formatOption={formatJourneyAirportCode}
         />
         <SelectFilter
           label="الجنس"

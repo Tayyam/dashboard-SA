@@ -78,7 +78,10 @@ export interface Filters {
 export type GroupedData = Record<string, Pilgrim[]>;
 
 export interface ChartDataPoint {
+  /** مفتاح البيانات والفلتر والنقر (مثلاً JED) */
   label: string;
   value: number;
   isSelected: boolean;
+  /** تسمية المحور/التولتيب عند الحاجة (مثلاً مطار جدة) */
+  axisLabel?: string;
 }

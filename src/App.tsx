@@ -19,6 +19,7 @@ import { ApprovalsPage } from './admin/ApprovalsPage';
 import { supabase } from './core/supabaseClient';
 import { ensureUserAndApproval, type AppRole, type ApprovalStatus } from './core/authAccess';
 import type { Filters } from './core/types';
+import { formatJourneyAirportCode } from './core/airportDisplay';
 
 type Page = 'dashboard' | 'journey' | 'approvals' | 'profile';
 type ProfilePayload = {
@@ -51,7 +52,7 @@ function ActiveFilterBadges() {
   const labels: Record<string, string> = {
     table_inside_kingdom: 'حالة التواجد',
     chart_gender: 'الجنس',
-    chart_arrival_city: 'مدينة الوصول',
+    chart_arrival_city: 'مطار مدينة الوصول',
     chart_contract_type: 'عقد الطيران',
     chart_visa_status: 'حالة التأشيرة',
     chart_arrival_date: 'تاريخ الوصول',
@@ -71,7 +72,13 @@ function ActiveFilterBadges() {
     <div className="filter-badges">
       {active.map((k) => (
         <button key={k} className="filter-badge" onClick={() => toggle(k, filters[k]!)}>
-          {labels[k]}: <strong>{filters[k]}</strong> x
+          {labels[k]}:{' '}
+          <strong>
+            {k === 'chart_arrival_city'
+              ? formatJourneyAirportCode(String(filters[k]))
+              : String(filters[k])}
+          </strong>{' '}
+          x
         </button>
       ))}
     </div>
@@ -401,6 +408,7 @@ export default function App() {
               <ChartWrapper title="عدد الحجاج حسب مدينة الوصول" height={280}>
                 <BarChart
                   data={arrivalCityData}
+                  categoryKey="axisLabel"
                   onSegmentClick={(v) => toggleChart('chart_arrival_city', v)}
                   layout="vertical"
                 />

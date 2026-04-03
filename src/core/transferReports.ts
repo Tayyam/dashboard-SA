@@ -176,10 +176,24 @@ export interface ReportGroupRow {
   stopLabel: string;
   /** وصول: مكان التوقف الأول. مغادرة: مكان آخر نقطة توقف (للحالة والعرض). */
   firstStopLocationLabel: string;
+  /** وصول: رقم رحلة الوصول. مغادرة: رقم رحلة المغادرة أو احتياطي وصول. */
+  flightNumberLabel: string;
+  /** وقت الوصول (مجمّع من الحجاج في الصف) */
+  arrivalTimeLabel: string;
   pilgrims: Pilgrim[];
   normalCount: number;
   transferCount: number;
   unknownCount: number;
+}
+
+function aggregateFlightField(list: Pilgrim[], get: (p: Pilgrim) => string): string {
+  const vals = list
+    .map((p) => get(p)?.trim())
+    .filter((s) => s && s !== '-');
+  if (vals.length === 0) return '—';
+  const uniq = [...new Set(vals)];
+  if (uniq.length === 1) return uniq[0];
+  return `${uniq.length.toLocaleString('en-US')} قيم`;
 }
 
 function statusSummary(normal: number, transfer: number, unknown: number): string {
@@ -249,12 +263,20 @@ function finalizeGroups(map: Map<string, Pilgrim[]>, mode: 'arrival' | 'departur
       else unknownCount++;
     }
 
+    const flightNumberLabel =
+      mode === 'arrival'
+        ? aggregateFlightField(list, (p) => p.arrival_flight_number)
+        : aggregateFlightField(list, (p) => p.departure_flight_number || p.arrival_flight_number);
+    const arrivalTimeLabel = aggregateFlightField(list, (p) => p.arrival_time);
+
     rows.push({
       sortDate,
       dateLabel,
       airportLabel,
       stopLabel,
       firstStopLocationLabel,
+      flightNumberLabel,
+      arrivalTimeLabel,
       pilgrims: list,
       normalCount,
       transferCount,

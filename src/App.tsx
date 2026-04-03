@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { KPICards } from './dashboard/KPICards';
 import { PilgrimsTable } from './dashboard/PilgrimsTable';
+import { HolyCityPresenceChart } from './dashboard/HolyCityPresenceChart';
 import { SidebarFilters } from './dashboard/SidebarFilters';
 import { ChartWrapper } from './charts/ChartWrapper';
 import { BarChart } from './charts/BarChart';
@@ -22,6 +23,7 @@ import { ensureUserAndApproval, type AppRole, type ApprovalStatus } from './core
 import type { Filters } from './core/types';
 import { AirportBadge } from './components/RegionBadge';
 import { cn } from './lib/cn';
+import { formatPresenceBucketDdMm } from './core/pilgrimDailyPresence';
 import { HiArrowRightOnRectangle, HiUser } from 'react-icons/hi2';
 
 type Page = 'dashboard' | 'journey' | 'approvals' | 'profile' | 'reports';
@@ -35,6 +37,7 @@ type ProfilePayload = {
 function ActiveFilterBadges() {
   const filters = useFilters((s) => s.filters);
   const toggle = useFilters((s) => s.toggleChartFilter);
+  const clearHolyCityPresence = useFilters((s) => s.clearHolyCityPresenceFilter);
 
   const chartKeys: (keyof Filters)[] = [
     'table_inside_kingdom',
@@ -49,7 +52,9 @@ function ActiveFilterBadges() {
     'chart_third_stop',
     'chart_nationality',
     'chart_package',
+    'chart_package_type',
     'chart_age_bucket',
+    'chart_holy_city',
   ];
 
   const labels: Record<string, string> = {
@@ -65,7 +70,9 @@ function ActiveFilterBadges() {
     chart_third_stop: 'التوقف 3',
     chart_nationality: 'الجنسية',
     chart_package: 'الباقة',
+    chart_package_type: 'نوع الباقة',
     chart_age_bucket: 'العمر',
+    chart_holy_city: 'التواجد (مكة / المدينة)',
   };
 
   const active = chartKeys.filter((k) => filters[k]);
@@ -78,11 +85,30 @@ function ActiveFilterBadges() {
           key={k}
           type="button"
           className="cursor-pointer rounded-full border border-[#b3d9c5] bg-primary-pale px-3 py-1 text-xs font-medium text-primary-dark transition-all duration-150 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
-          onClick={() => toggle(k, filters[k]!)}
+          onClick={() => {
+            if (k === 'chart_holy_city') clearHolyCityPresence();
+            else toggle(k, filters[k]!);
+          }}
         >
           {labels[k]}:{' '}
           {k === 'chart_arrival_city' ? (
             <AirportBadge code={String(filters[k])} />
+          ) : k === 'chart_holy_city' ? (
+            <>
+              <strong>{String(filters.chart_holy_city)}</strong>
+              {filters.chart_holy_city_date ? (
+                <>
+                  {' '}
+                  ·{' '}
+                  <span className="tabular-nums" dir="ltr">
+                    {formatPresenceBucketDdMm({
+                      start: filters.chart_holy_city_date,
+                      end: filters.chart_holy_city_date_end ?? filters.chart_holy_city_date,
+                    })}
+                  </span>
+                </>
+              ) : null}
+            </>
           ) : (
             <strong>{String(filters[k])}</strong>
           )}{' '}
@@ -196,6 +222,7 @@ export default function App() {
     thirdStopData,
     nationalityData,
     packageData,
+    packageTypeData,
     ageData,
   } = useDashboardData();
 
@@ -207,6 +234,8 @@ export default function App() {
   const hasAnyFilter = Object.values(filters).some(Boolean);
   const userEmail = session?.user?.email ?? 'user';
   const isAdmin = role === 'admin';
+  const isManager = role === 'manager';
+  const canOpenApprovals = isAdmin || isManager;
   const isApproved = isAdmin || approvalStatus === 'approved';
   const fetchPilgrimsData = usePilgrimsData((s) => s.fetchData);
 
@@ -356,7 +385,7 @@ export default function App() {
           >
             التقارير
           </button>
-          {isAdmin && (
+          {canOpenApprovals && (
             <button
               type="button"
               className={cn(
@@ -429,7 +458,7 @@ export default function App() {
       )}
 
       {isJourney && <JourneyPage />}
-      {isApprovals && isAdmin && <ApprovalsPage adminUserId={session.user.id} />}
+      {isApprovals && canOpenApprovals && <ApprovalsPage adminUserId={session.user.id} />}
       {isReports && <ReportsPage />}
 
       {isDashboard && (
@@ -471,6 +500,10 @@ export default function App() {
                     layout="vertical"
                   />
                 </ChartWrapper>
+              </div>
+
+              <div className="col-span-4 max-xl:col-span-2 max-md:col-span-1">
+                <HolyCityPresenceChart filteredData={filteredData} />
               </div>
 
               <div className="col-span-4 max-xl:col-span-2 max-md:col-span-1">
@@ -562,12 +595,39 @@ export default function App() {
               </div>
 
               <div className="col-span-4 max-xl:col-span-2 max-md:col-span-1">
-                <ChartWrapper title="عدد الحجاج حسب الباقة" height={270}>
-                  <BarChart
-                    data={packageData}
-                    onSegmentClick={(v) => toggleChart('chart_package', v)}
-                    maxLabelLen={12}
-                  />
+                <ChartWrapper title="عدد الحجاج حسب الباقة" height={520}>
+                  <div className="flex h-full flex-col gap-3">
+                    <div className="flex min-h-0 flex-1 flex-col gap-1">
+                      <p className="shrink-0 text-[10px] font-bold tracking-wide text-fg-secondary uppercase">
+                        حسب اسم الباقة
+                      </p>
+                      <div className="min-h-0 flex-1">
+                        <BarChart
+                          data={packageData}
+                          onSegmentClick={(v) => toggleChart('chart_package', v)}
+                          maxLabelLen={12}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex min-h-0 flex-1 flex-col gap-1 border-t border-gray-100 pt-2">
+                      <p className="shrink-0 text-[10px] font-bold tracking-wide text-fg-secondary uppercase">
+                        حسب نوع الباقة (T1–T5)
+                      </p>
+                      <div className="min-h-0 flex-1">
+                        {packageTypeData.length === 0 ? (
+                          <p className="flex h-full items-center justify-center px-2 text-center text-xs text-fg-secondary">
+                            لا توجد بيانات لأنواع الباقات (T1–T5) في النتائج الحالية.
+                          </p>
+                        ) : (
+                          <BarChart
+                            data={packageTypeData}
+                            onSegmentClick={(v) => toggleChart('chart_package_type', v)}
+                            maxLabelLen={8}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </ChartWrapper>
               </div>
 

@@ -11,6 +11,8 @@ import { useFilters } from './useFilters';
 import { DIMENSIONS } from '../core/dimensions';
 import { formatJourneyAirportCode } from '../core/airportDisplay';
 import { usePilgrimsData } from './usePilgrimsData';
+import { countPilgrimsByPackageType } from '../core/packageTypeReport';
+import type { ChartDataPoint } from '../core/types';
 
 const ZERO_ROOMS = { triple: 0, double: 0, quad: 0 };
 
@@ -101,6 +103,30 @@ export function useDashboardData() {
     return toChartData(agg, filters.chart_package);
   }, [filteredData, filters.chart_package]);
 
+  const packageTypeData = useMemo((): ChartDataPoint[] => {
+    const { byType, unmatched } = countPilgrimsByPackageType(filteredData);
+    const sel = filters.chart_package_type;
+    const order = ['T1', 'T2', 'T3', 'T4', 'T5'] as const;
+    const pts: ChartDataPoint[] = [];
+    for (const t of order) {
+      const v = byType[t] ?? 0;
+      if (v === 0) continue;
+      pts.push({
+        label: t,
+        value: v,
+        isSelected: sel === null || sel === t,
+      });
+    }
+    if (unmatched > 0) {
+      pts.push({
+        label: 'أخرى',
+        value: unmatched,
+        isSelected: sel === null || sel === 'أخرى',
+      });
+    }
+    return pts;
+  }, [filteredData, filters.chart_package_type]);
+
   const ageData = useMemo(() => {
     const agg = aggregate(groupBy(filteredData, DIMENSIONS.AGE_BUCKET as never), 'count');
     return toSortedChartData(agg, filters.chart_age_bucket, 'label');
@@ -122,6 +148,7 @@ export function useDashboardData() {
     thirdStopData,
     nationalityData,
     packageData,
+    packageTypeData,
     ageData,
   };
 }

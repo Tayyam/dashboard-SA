@@ -1,5 +1,12 @@
 import type { Pilgrim, Filters } from './types';
 import { thirdStopChartLabel } from './aggregationEngine';
+import {
+  HOLY_CITY_MADINAH_LABEL,
+  HOLY_CITY_MAKKAH_LABEL,
+  pilgrimHolyCityFlags,
+} from './holyCityPresence';
+import { pilgrimPresenceOnCalendarDate } from './pilgrimDailyPresence';
+import { packageTypeFromPackageId } from './packageTypeReport';
 
 export function applyFilters(data: Pilgrim[], filters: Filters): Pilgrim[] {
   return data.filter((p) => {
@@ -40,12 +47,33 @@ export function applyFilters(data: Pilgrim[], filters: Filters): Pilgrim[] {
     if (filters.chart_third_stop && thirdStopChartLabel(p) !== filters.chart_third_stop) return false;
     if (filters.chart_nationality && p.nationality !== filters.chart_nationality) return false;
     if (filters.chart_package && p.package !== filters.chart_package) return false;
+    if (filters.chart_package_type) {
+      const mapped = packageTypeFromPackageId(p.package_id ?? '');
+      if (filters.chart_package_type === 'أخرى') {
+        if (mapped === 'T1' || mapped === 'T2' || mapped === 'T3' || mapped === 'T4' || mapped === 'T5') {
+          return false;
+        }
+      } else if (mapped !== filters.chart_package_type) {
+        return false;
+      }
+    }
     if (filters.chart_age_bucket) {
       const bucket = getAgeBucket(p.age);
       if (bucket !== filters.chart_age_bucket) return false;
     }
     if (filters.chart_contract_type && p.flight_contract_type !== filters.chart_contract_type) return false;
     if (filters.chart_visa_status && p.visa_status !== filters.chart_visa_status) return false;
+    if (filters.chart_holy_city) {
+      if (filters.chart_holy_city_date) {
+        const { makkah, madinah } = pilgrimPresenceOnCalendarDate(p, filters.chart_holy_city_date);
+        if (filters.chart_holy_city === HOLY_CITY_MAKKAH_LABEL && !makkah) return false;
+        if (filters.chart_holy_city === HOLY_CITY_MADINAH_LABEL && !madinah) return false;
+      } else {
+        const { makkah, madinah } = pilgrimHolyCityFlags(p);
+        if (filters.chart_holy_city === HOLY_CITY_MAKKAH_LABEL && !makkah) return false;
+        if (filters.chart_holy_city === HOLY_CITY_MADINAH_LABEL && !madinah) return false;
+      }
+    }
 
     return true;
   });

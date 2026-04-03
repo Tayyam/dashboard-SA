@@ -12,7 +12,7 @@ import type { Pilgrim } from '../core/types';
 import { RegionBadge } from '../components/RegionBadge';
 import { cn } from '../lib/cn';
 import { ArrivalStatusDistributionReportSection } from './ArrivalStatusDistributionReportSection';
-import { PilgrimGroupModal } from './PilgrimGroupModal';
+import { PilgrimGroupModal, type PilgrimDetailScope } from './PilgrimGroupModal';
 import {
   HiOutlineArrowDownCircle,
   HiOutlineArrowUpCircle,
@@ -124,10 +124,15 @@ export function ReportsPage() {
 
   const [view, setView] = useState<ReportView>('hub');
 
+  /** أعمدة اختيارية في تقارير الوصول / المغادرة — يمكن إخفاؤها من الخيارات */
+  const [arrivalReportCols, setArrivalReportCols] = useState({ flightNumber: true, arrivalTime: true });
+  const [departureReportCols, setDepartureReportCols] = useState({ flightNumber: true });
+
   const [detailModal, setDetailModal] = useState<{
     title: string;
     subtitle?: string;
     pilgrims: Pilgrim[];
+    detailScope?: PilgrimDetailScope;
   } | null>(null);
 
   const { byType, unmatched } = useMemo(() => countPilgrimsByPackageType(data), [data]);
@@ -147,6 +152,10 @@ export function ReportsPage() {
     [transferCases],
   );
 
+  const arrivalTableColSpan =
+    6 + (arrivalReportCols.flightNumber ? 1 : 0) + (arrivalReportCols.arrivalTime ? 1 : 0);
+  const departureTableColSpan = 6 + (departureReportCols.flightNumber ? 1 : 0);
+
   return (
     <>
       <PilgrimGroupModal
@@ -154,6 +163,7 @@ export function ReportsPage() {
         title={detailModal?.title ?? ''}
         subtitle={detailModal?.subtitle}
         pilgrims={detailModal?.pilgrims ?? []}
+        detailScope={detailModal?.detailScope ?? 'full'}
         onClose={() => setDetailModal(null)}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-gradient-to-br from-primary-pale from-0% via-page via-[38%] to-slate-50 to-100% [background-size:100%_100%]">
@@ -378,6 +388,31 @@ export function ReportsPage() {
               <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(15,23,42,0.08)]">
                 <div className="border-b border-border bg-gradient-to-b from-white to-[#fafcfb] px-[22px] py-4">
                   <h2 className="m-0 text-base font-extrabold text-primary-dark">تقرير الوصول</h2>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border/60 pt-3 text-xs font-semibold text-fg-secondary">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wide text-fg-muted">أعمدة اختيارية</span>
+                    <label className="flex cursor-pointer items-center gap-2 select-none hover:text-fg">
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 shrink-0 rounded border-border text-primary focus:ring-primary"
+                        checked={arrivalReportCols.flightNumber}
+                        onChange={(e) =>
+                          setArrivalReportCols((c) => ({ ...c, flightNumber: e.target.checked }))
+                        }
+                      />
+                      رقم الرحلة
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-2 select-none hover:text-fg">
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 shrink-0 rounded border-border text-primary focus:ring-primary"
+                        checked={arrivalReportCols.arrivalTime}
+                        onChange={(e) =>
+                          setArrivalReportCols((c) => ({ ...c, arrivalTime: e.target.checked }))
+                        }
+                      />
+                      وقت الوصول
+                    </label>
+                  </div>
                 </div>
                 <div className="scrollbar-table-x overflow-x-auto touch-pan-x">
                   <table className="min-w-[960px] w-full border-collapse text-[13px]">
@@ -389,6 +424,16 @@ export function ReportsPage() {
                         <th scope="col" className={thBase}>
                           مطار الوصول
                         </th>
+                        {arrivalReportCols.flightNumber && (
+                          <th scope="col" className={thBase}>
+                            رقم الرحلة
+                          </th>
+                        )}
+                        {arrivalReportCols.arrivalTime && (
+                          <th scope="col" className={thBase}>
+                            وقت الوصول
+                          </th>
+                        )}
                         <th scope="col" className={thBase}>
                           نقطة التوقف الأولى
                         </th>
@@ -406,7 +451,7 @@ export function ReportsPage() {
                     <tbody>
                       {arrivalRows.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-4 py-8 text-center text-fg-secondary">
+                          <td colSpan={arrivalTableColSpan} className="px-4 py-8 text-center text-fg-secondary">
                             لا توجد بيانات وصول كافية.
                           </td>
                         </tr>
@@ -422,6 +467,24 @@ export function ReportsPage() {
                               <td className="px-4 py-3.5 align-middle">
                                 <RegionBadge label={row.airportLabel} />
                               </td>
+                              {arrivalReportCols.flightNumber && (
+                                <td
+                                  className="max-w-[120px] truncate px-4 py-3.5 align-middle font-mono text-xs text-fg-secondary tabular-nums"
+                                  dir="ltr"
+                                  title={row.flightNumberLabel}
+                                >
+                                  {row.flightNumberLabel}
+                                </td>
+                              )}
+                              {arrivalReportCols.arrivalTime && (
+                                <td
+                                  className="max-w-[100px] truncate px-4 py-3.5 align-middle text-fg-secondary tabular-nums"
+                                  dir="ltr"
+                                  title={row.arrivalTimeLabel}
+                                >
+                                  {row.arrivalTimeLabel}
+                                </td>
+                              )}
                               <td
                                 className="max-w-[220px] truncate px-4 py-3.5 align-middle text-fg-secondary"
                                 title={row.stopLabel}
@@ -450,6 +513,7 @@ export function ReportsPage() {
                                       title: 'تفاصيل الحجاج — تقرير الوصول',
                                       subtitle: `${row.dateLabel} · ${row.airportLabel} · ${row.stopLabel} · ${row.firstStopLocationLabel}`,
                                       pilgrims: row.pilgrims,
+                                      detailScope: 'arrival_report',
                                     })
                                   }
                                 >
@@ -467,12 +531,28 @@ export function ReportsPage() {
             ) : view === 'arrival_status' ? (
               <ArrivalStatusDistributionReportSection
                 data={data}
-                onOpenPilgrims={(title, subtitle, pilgrims) => setDetailModal({ title, subtitle, pilgrims })}
+                onOpenPilgrims={(title, subtitle, pilgrims) =>
+                  setDetailModal({ title, subtitle, pilgrims, detailScope: 'arrival_report' })
+                }
               />
             ) : view === 'departure' ? (
               <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_8px_32px_rgba(15,23,42,0.08)]">
                 <div className="border-b border-border bg-gradient-to-b from-white to-[#fafcfb] px-[22px] py-4">
                   <h2 className="m-0 text-base font-extrabold text-primary-dark">تقرير المغادرة</h2>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border/60 pt-3 text-xs font-semibold text-fg-secondary">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wide text-fg-muted">أعمدة اختيارية</span>
+                    <label className="flex cursor-pointer items-center gap-2 select-none hover:text-fg">
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 shrink-0 rounded border-border text-primary focus:ring-primary"
+                        checked={departureReportCols.flightNumber}
+                        onChange={(e) =>
+                          setDepartureReportCols((c) => ({ ...c, flightNumber: e.target.checked }))
+                        }
+                      />
+                      رقم رحلة المغادرة
+                    </label>
+                  </div>
                 </div>
                 <div className="scrollbar-table-x overflow-x-auto touch-pan-x">
                   <table className="min-w-[960px] w-full border-collapse text-[13px]">
@@ -484,6 +564,11 @@ export function ReportsPage() {
                         <th scope="col" className={thBase}>
                           مطار المغادرة
                         </th>
+                        {departureReportCols.flightNumber && (
+                          <th scope="col" className={thBase}>
+                            رقم رحلة المغادرة
+                          </th>
+                        )}
                         <th scope="col" className={thBase}>
                           نقطة التوقف (قبل المغادرة)
                         </th>
@@ -501,7 +586,7 @@ export function ReportsPage() {
                     <tbody>
                       {departureRows.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-4 py-8 text-center text-fg-secondary">
+                          <td colSpan={departureTableColSpan} className="px-4 py-8 text-center text-fg-secondary">
                             لا توجد بيانات مغادرة كافية.
                           </td>
                         </tr>
@@ -517,6 +602,15 @@ export function ReportsPage() {
                               <td className="px-4 py-3.5 align-middle">
                                 <RegionBadge label={row.airportLabel} />
                               </td>
+                              {departureReportCols.flightNumber && (
+                                <td
+                                  className="max-w-[120px] truncate px-4 py-3.5 align-middle font-mono text-xs text-fg-secondary tabular-nums"
+                                  dir="ltr"
+                                  title={row.flightNumberLabel}
+                                >
+                                  {row.flightNumberLabel}
+                                </td>
+                              )}
                               <td
                                 className="max-w-[220px] truncate px-4 py-3.5 align-middle text-fg-secondary"
                                 title={row.stopLabel}
@@ -545,6 +639,7 @@ export function ReportsPage() {
                                       title: 'تفاصيل الحجاج — تقرير المغادرة',
                                       subtitle: `${row.dateLabel} · ${row.airportLabel} · ${row.stopLabel} · ${row.firstStopLocationLabel}`,
                                       pilgrims: row.pilgrims,
+                                      detailScope: 'departure_report',
                                     })
                                   }
                                 >
@@ -634,6 +729,8 @@ export function ReportsPage() {
                                     title: `تفاصيل الحجاج — نقل (${row.kind === 'arrival' ? 'وصول' : 'مغادرة'})`,
                                     subtitle: `${row.dateLabel} · ${row.airportLabel} · ${row.destinationCity} · ${row.firstStopLocationLabel}`,
                                     pilgrims: row.pilgrims,
+                                    detailScope:
+                                      row.kind === 'arrival' ? 'arrival_report' : 'departure_report',
                                   })
                                 }
                               >

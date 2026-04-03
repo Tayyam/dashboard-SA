@@ -48,6 +48,12 @@ export interface Pilgrim {
   flight_contract_type: 'B2B' | 'GDS';
   /** true إذا كان الصف يحتوي حقول وصول جوي (مطار، Dep_Arr_Date، Dep_Destination) — يُستخدم لعدم اشتقاق مدينة الوصول من أماكن برية */
   has_arrival_flight: boolean;
+  /** رقم رحلة الوصول (اختياري — من ملف الإكسل / القاعدة) */
+  arrival_flight_number: string;
+  /** وقت الوصول (نص أو وقت مستخرج من Excel) */
+  arrival_time: string;
+  /** رقم رحلة المغادرة (اختياري) */
+  departure_flight_number: string;
 }
 
 export interface Filters {
@@ -72,9 +78,17 @@ export interface Filters {
   chart_third_stop: string | null;
   chart_nationality: string | null;
   chart_package: string | null;
+  /** T1–T5 أو «أخرى» لغير المطابقة مع مصفوفة الأنواع */
+  chart_package_type: string | null;
   chart_age_bucket: string | null;
   chart_contract_type: string | null;
   chart_visa_status: string | null;
+  /** تواجد برنامج الحاج في مكة أو المدينة (من مواقع التوقف والمدن والمطارات) */
+  chart_holy_city: string | null;
+  /** تاريخ التقويم المرتبط بفلتر رسم التواجد اليومي (YYYY-MM-DD) */
+  chart_holy_city_date: string | null;
+  /** نهاية النطاق عند دمج أيام متطابقة (أو نفس بداية اليوم) */
+  chart_holy_city_date_end: string | null;
 }
 
 export type GroupedData = Record<string, Pilgrim[]>;

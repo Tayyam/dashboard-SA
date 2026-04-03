@@ -68,6 +68,9 @@ const PILGRIMS_COLUMNS = [
   'third_stop_check_out',
   'first_entry_place',
   'arrival_airport',
+  'arrival_flight_number',
+  'arrival_time',
+  'departure_flight_number',
   'last_exit_place',
   'departure_airport',
   'created_at',
@@ -76,6 +79,9 @@ const PILGRIMS_COLUMNS = [
 
 function pilgrimPreviewColumnLabel(col: string): string {
   if (col === 'package_id') return 'package type';
+  if (col === 'arrival_flight_number') return 'رقم رحلة الوصول';
+  if (col === 'arrival_time') return 'وقت الوصول';
+  if (col === 'departure_flight_number') return 'رقم رحلة المغادرة';
   return col;
 }
 
@@ -123,13 +129,16 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
   const [tab, setTab]                     = useState<TabFilter>('pending');
   const [search, setSearch]               = useState('');
   const [confirmRow, setConfirmRow]       = useState<AccountRow | null>(null);
-  const [confirmAction, setConfirmAction] = useState<'delete' | 'revoke' | 'reset_pwd' | 'promote' | 'downgrade' | null>(null);
+  const [confirmAction, setConfirmAction] = useState<
+    'delete' | 'revoke' | 'reset_pwd' | 'promote_admin' | 'promote_manager' | 'downgrade' | null
+  >(null);
   const [resetPwdValue, setResetPwdValue] = useState('');
   const [autoApprove, setAutoApprove]     = useState<boolean>(false);
   const [settingLoading, setSettingLoading] = useState(false);
   const [uploadingPilgrims, setUploadingPilgrims] = useState(false);
   const [uploadInfo, setUploadInfo] = useState<string | null>(null);
-  const [hasAdminAccess, setHasAdminAccess] = useState<boolean | null>(null);
+  /** admin = صلاحيات كاملة؛ manager = رفع Excel ومعاينة الحجاج فقط */
+  const [access, setAccess] = useState<'loading' | 'denied' | 'admin' | 'manager'>('loading');
   const [previewRows, setPreviewRows] = useState<PilgrimPreviewRow[]>([]);
   const [previewTotal, setPreviewTotal] = useState(0);
   const [previewPage, setPreviewPage] = useState(1);
@@ -256,14 +265,22 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
           .eq('id', adminUserId)
           .single();
         if (roleError) throw roleError;
-        const isAdmin = data?.role === 'admin';
+        const r = data?.role;
         if (cancelled) return;
-        setHasAdminAccess(isAdmin);
-        if (!isAdmin) return;
-        await load();
+        if (r === 'admin') {
+          setAccess('admin');
+          await load();
+        } else if (r === 'manager') {
+          setAccess('manager');
+          setLoading(false);
+        } else {
+          setAccess('denied');
+          setLoading(false);
+        }
       } catch (err) {
         if (cancelled) return;
-        setHasAdminAccess(false);
+        setAccess('denied');
+        setLoading(false);
         setError(err instanceof Error ? err.message : 'غير مصرح لك بالدخول لهذه الصفحة');
       }
     };
@@ -273,10 +290,12 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
     };
   }, [adminUserId]);
 
+  const canUsePilgrimsTools = access === 'admin' || access === 'manager';
+
   useEffect(() => {
-    if (hasAdminAccess !== true || !showPilgrimsPreview) return;
+    if (!canUsePilgrimsTools || !showPilgrimsPreview) return;
     loadPilgrimsPreview(previewPage);
-  }, [previewPage, hasAdminAccess, showPilgrimsPreview]);
+  }, [previewPage, canUsePilgrimsTools, showPilgrimsPreview]);
 
   /* ── Derived counts ────────────────────────────────────────────── */
   const counts = useMemo(() => ({
@@ -462,7 +481,10 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
   };
 
   /* ── Confirm helpers ───────────────────────────────────────────── */
-  const askConfirm = (row: AccountRow, action: 'delete' | 'revoke' | 'reset_pwd' | 'promote' | 'downgrade') => {
+  const askConfirm = (
+    row: AccountRow,
+    action: 'delete' | 'revoke' | 'reset_pwd' | 'promote_admin' | 'promote_manager' | 'downgrade',
+  ) => {
     setConfirmRow(row);
     setConfirmAction(action);
     if (action === 'reset_pwd') setResetPwdValue('');
@@ -473,20 +495,31 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
     if (confirmAction === 'delete') deleteAccount(confirmRow);
     if (confirmAction === 'revoke') setStatus(confirmRow, 'rejected');
     if (confirmAction === 'reset_pwd') resetPassword(confirmRow, resetPwdValue);
-    if (confirmAction === 'promote') setRole(confirmRow, 'admin');
+    if (confirmAction === 'promote_admin') setRole(confirmRow, 'admin');
+    if (confirmAction === 'promote_manager') setRole(confirmRow, 'manager');
     if (confirmAction === 'downgrade') setRole(confirmRow, 'user');
   };
 
   const previewPages = Math.max(1, Math.ceil(previewTotal / PREVIEW_PAGE_SIZE));
 
   /* ── Render ────────────────────────────────────────────────────── */
-  if (hasAdminAccess === false) {
+  if (access === 'denied') {
     return (
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-page px-6 pb-8 pt-5 rtl">
         <p className="text-sm font-semibold text-red-700">غير مصرح لك بالوصول إلى صفحة إدارة الحسابات.</p>
       </div>
     );
   }
+
+  if (access === 'loading') {
+    return (
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-page px-6 pb-8 pt-5 rtl">
+        <p className="text-sm text-fg-secondary">جاري التحقق من الصلاحيات...</p>
+      </div>
+    );
+  }
+
+  const isAdminViewer = access === 'admin';
 
   const refreshBtnClass =
     'inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-primary-light bg-primary-pale px-3.5 py-1.5 font-sans text-xs font-bold text-primary transition-all hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50';
@@ -497,8 +530,12 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
       {/* Top bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-[22px] font-extrabold leading-tight text-gray-900">إدارة الحسابات</h2>
-          <span className="text-xs font-medium text-gray-500">إجمالي {counts.all} حساب</span>
+          <h2 className="text-[22px] font-extrabold leading-tight text-gray-900">
+            {isAdminViewer ? 'إدارة الحسابات' : 'رفع بيانات الحجاج'}
+          </h2>
+          <span className="text-xs font-medium text-gray-500">
+            {isAdminViewer ? `إجمالي ${counts.all} حساب` : 'صلاحية مدير: رفع ملف Excel ومعاينة الجدول فقط'}
+          </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-5">
@@ -529,39 +566,44 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
             {showPilgrimsPreview ? 'إخفاء معاينة جدول الحجاج' : 'عرض معاينة جدول الحجاج'}
           </button>
 
-          <div className="flex items-center gap-2.5 rounded-[10px] border border-border bg-white px-3 py-1.5">
-            <span className="text-xs font-bold text-gray-700">الموافقة التلقائية</span>
-            <button
-              type="button"
-              className={cn(
-                'relative h-[22px] w-[42px] shrink-0 cursor-pointer rounded-full border-none p-0 transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-                autoApprove ? 'bg-primary' : 'bg-gray-300',
-              )}
-              onClick={toggleAutoApprove}
-              disabled={settingLoading}
-              title={autoApprove ? 'إيقاف الموافقة التلقائية' : 'تفعيل الموافقة التلقائية'}
-            >
-              <div
-                className={cn(
-                  'absolute top-[3px] h-4 w-4 rounded-full bg-white transition-transform',
-                  autoApprove ? '-translate-x-5' : '',
-                )}
-                style={{ right: 3 }}
-              />
-            </button>
-          </div>
+          {isAdminViewer && (
+            <>
+              <div className="flex items-center gap-2.5 rounded-[10px] border border-border bg-white px-3 py-1.5">
+                <span className="text-xs font-bold text-gray-700">الموافقة التلقائية</span>
+                <button
+                  type="button"
+                  className={cn(
+                    'relative h-[22px] w-[42px] shrink-0 cursor-pointer rounded-full border-none p-0 transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                    autoApprove ? 'bg-primary' : 'bg-gray-300',
+                  )}
+                  onClick={toggleAutoApprove}
+                  disabled={settingLoading}
+                  title={autoApprove ? 'إيقاف الموافقة التلقائية' : 'تفعيل الموافقة التلقائية'}
+                >
+                  <div
+                    className={cn(
+                      'absolute top-[3px] h-4 w-4 rounded-full bg-white transition-transform',
+                      autoApprove ? '-translate-x-5' : '',
+                    )}
+                    style={{ right: 3 }}
+                  />
+                </button>
+              </div>
 
-          <button type="button" className={refreshBtnClass} onClick={load} title="تحديث" disabled={loading}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-              <path d="M4 4v6h6M20 20v-6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L4 10m16 4l-1.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            تحديث
-          </button>
+              <button type="button" className={refreshBtnClass} onClick={load} title="تحديث" disabled={loading}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 4v6h6M20 20v-6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L4 10m16 4l-1.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                تحديث
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Stats row */}
+      {isAdminViewer && (
       <div className="grid grid-cols-4 gap-2.5 max-md:grid-cols-2">
         {(
           [
@@ -592,8 +634,10 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
           </button>
         ))}
       </div>
+      )}
 
       {/* Search */}
+      {isAdminViewer && (
       <div className="flex items-center gap-3">
         <div className="relative max-w-[360px] flex-1">
           <svg
@@ -623,14 +667,15 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
           )}
         </div>
       </div>
+      )}
 
       {error && <p className="text-sm font-semibold text-red-700">{error}</p>}
       {uploadInfo && <p className="text-sm text-fg-secondary">{uploadInfo}</p>}
 
       {/* Table */}
-      {loading ? (
+      {isAdminViewer && loading ? (
         <p className="text-sm text-fg-secondary">جاري التحميل...</p>
-      ) : (
+      ) : isAdminViewer ? (
         <div className="overflow-hidden rounded-[14px] border border-border bg-white shadow-card-sm">
           {visible.length === 0 ? (
             <p className="px-2 py-3 text-sm text-fg-secondary">لا توجد نتائج.</p>
@@ -680,6 +725,11 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
                               مسؤول
                             </span>
                           )}
+                          {row.role === 'manager' && (
+                            <span className="mt-0.5 inline-block rounded-full border border-sky-200 bg-sky-50 px-1.5 py-px text-[10px] font-bold text-sky-900">
+                              مدير
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -727,16 +777,55 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
                             </button>
                           </>
                         )}
-                        {row.status === 'approved' && row.role !== 'admin' && (
+                        {row.status === 'approved' && row.role === 'user' && (
                           <>
                             <button
                               type="button"
                               className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-sky-200 bg-sky-100 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-sky-800 transition-colors hover:bg-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
-                              onClick={() => askConfirm(row, 'promote')}
+                              onClick={() => askConfirm(row, 'promote_manager')}
+                              disabled={!!actionId}
+                              title="ترقية إلى مدير"
+                            >
+                              ترقية لمدير
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-amber-200 bg-amber-100 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-amber-900 transition-colors hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+                              onClick={() => askConfirm(row, 'promote_admin')}
                               disabled={!!actionId}
                               title="ترقية إلى مسؤول"
                             >
-                              ترقية
+                              ترقية لمسؤول
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-200 bg-red-100 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-red-800 transition-colors hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+                              onClick={() => askConfirm(row, 'revoke')}
+                              disabled={!!actionId}
+                            >
+                              سحب الموافقة
+                            </button>
+                          </>
+                        )}
+                        {row.status === 'approved' && row.role === 'manager' && (
+                          <>
+                            <button
+                              type="button"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-amber-200 bg-amber-100 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-amber-900 transition-colors hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+                              onClick={() => askConfirm(row, 'promote_admin')}
+                              disabled={!!actionId}
+                              title="ترقية إلى مسؤول"
+                            >
+                              ترقية لمسؤول
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-slate-800 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                              onClick={() => askConfirm(row, 'downgrade')}
+                              disabled={!!actionId}
+                              title="تنزيل إلى مستخدم عادي"
+                            >
+                              تنزيل لمستخدم
                             </button>
                             <button
                               type="button"
@@ -804,7 +893,7 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
             </table>
           )}
         </div>
-      )}
+      ) : null}
 
       {showPilgrimsPreview && (
         <div className="flex flex-col gap-2 border-t border-border pt-2">
@@ -891,7 +980,10 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
               {confirmAction === 'delete' && `هل أنت متأكد من حذف حساب "${confirmRow.name}" نهائياً؟`}
               {confirmAction === 'revoke' && `هل تريد سحب موافقة "${confirmRow.name}"؟`}
               {confirmAction === 'reset_pwd' && `إعادة تعيين كلمة السر للمستخدم "${confirmRow.name}"`}
-              {confirmAction === 'promote' && `هل تريد ترقية "${confirmRow.name}" ليكون مسؤولاً (Admin)؟`}
+              {confirmAction === 'promote_admin' &&
+                `هل تريد ترقية "${confirmRow.name}" ليكون مسؤولاً؟`}
+              {confirmAction === 'promote_manager' &&
+                `هل تريد ترقية "${confirmRow.name}" ليكون مديراً (رفع Excel ومعاينة الحجاج)؟`}
               {confirmAction === 'downgrade' && `هل تريد تنزيل صلاحيات "${confirmRow.name}" لمستخدم عادي؟`}
             </p>
 
@@ -914,9 +1006,11 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
                 type="button"
                 className={cn(
                   'inline-flex cursor-pointer items-center gap-1 rounded-lg border border-transparent px-3 py-1.5 text-xs font-bold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50',
-                  confirmAction === 'delete' || confirmAction === 'revoke' || confirmAction === 'downgrade'
+                  confirmAction === 'delete' || confirmAction === 'revoke'
                     ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                    : 'bg-primary text-white hover:bg-primary-dark',
+                    : confirmAction === 'downgrade'
+                      ? 'bg-amber-100 text-amber-900 hover:bg-amber-200'
+                      : 'bg-primary text-white hover:bg-primary-dark',
                 )}
                 onClick={handleConfirm}
                 disabled={confirmAction === 'reset_pwd' && resetPwdValue.length < 6}

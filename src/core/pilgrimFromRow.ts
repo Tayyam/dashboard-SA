@@ -39,6 +39,87 @@ function pickStr(row: Record<string, unknown>, keys: string[]): string {
   return '';
 }
 
+/** تطبيع اسم العمود: إزالة BOM، مسافات زائدة، توحيد المسافات إلى _ لمطابقة Dep_Flight و Dep Flight */
+function normalizeColumnName(name: string): string {
+  return name
+    .replace(/^\uFEFF/, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+}
+
+/** مطابقة مرنة عندما تختلف تسمية الرأس في Excel قليلاً عن المفتاح المتوقع */
+function pickStrFlexible(row: Record<string, unknown>, keys: string[]): string {
+  const direct = pickStr(row, keys);
+  if (direct) return direct;
+  const targets = new Set(keys.map(normalizeColumnName));
+  for (const [k, v] of Object.entries(row)) {
+    if (!targets.has(normalizeColumnName(k))) continue;
+    const t = toText(v);
+    if (t) return t;
+  }
+  return '';
+}
+
+function pickTimeFlexible(row: Record<string, unknown>, keys: string[]): string {
+  for (const k of keys) {
+    if (!(k in row)) continue;
+    const v = row[k];
+    const fromDate = formatTimeCellValue(v);
+    if (fromDate) return fromDate;
+    const t = toText(v);
+    if (t) return t;
+  }
+  const targets = new Set(keys.map(normalizeColumnName));
+  for (const [k, v] of Object.entries(row)) {
+    if (!targets.has(normalizeColumnName(k))) continue;
+    const fromDate = formatTimeCellValue(v);
+    if (fromDate) return fromDate;
+    const t = toText(v);
+    if (t) return t;
+  }
+  return '';
+}
+
+/** تنسيق وقت من خلية Excel قد تكون Date أو كسر يوم أو نص مثل 9:25:00 AM */
+function formatTimeCellValue(v: unknown): string {
+  if (v instanceof Date && !Number.isNaN(v.getTime())) {
+    const hasTime =
+      v.getHours() !== 0 || v.getMinutes() !== 0 || v.getSeconds() !== 0 || v.getMilliseconds() !== 0;
+    if (!hasTime) return '';
+    return v.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: v.getSeconds() ? '2-digit' : undefined,
+      hour12: true,
+    });
+  }
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    const frac = ((v % 1) + 1) % 1;
+    if (frac > 1e-6) {
+      const useFrac = v >= 0 && v < 1 ? v : frac;
+      const totalMinutes = Math.round(useFrac * 24 * 60) % (24 * 60);
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+  }
+  return '';
+}
+
+/** وقت من Excel: Date / كسر يوم / نص */
+function pickTimeFromRow(row: Record<string, unknown>, keys: string[]): string {
+  for (const k of keys) {
+    if (!(k in row)) continue;
+    const v = row[k];
+    const fromDate = formatTimeCellValue(v);
+    if (fromDate) return fromDate;
+    const t = toText(v);
+    if (t) return t;
+  }
+  return '';
+}
+
 function toNum(v: unknown): number {
   const n = Number(v ?? 0);
   return Number.isFinite(n) ? n : 0;
@@ -196,6 +277,37 @@ export function pilgrimFromRow(row: Record<string, unknown>, index: number): Pil
     arrival_airport: pickStr(row, ['arrival_airport', 'مطار الوصول']),
     last_exit_place: pickStr(row, ['last_exit_place', 'آخر مكان خروج']),
     departure_airport: pickStr(row, ['departure_airport', 'مطار المغادرة']),
+    /** القالب الشائع: Dep_Flight = رحلة الوصول، Ret_Flight = رحلة العودة (لا تضع Dep_Flight تحت المغادرة) */
+    arrival_flight_number: pickStr(row, [
+      'Dep_Flight',
+      'dep_flight',
+      'arrival_flight_number',
+      'Arr_Flight',
+      'arr_flight',
+      'inbound_flight',
+      'Flight_No',
+      'flight_no',
+      'Dep_Flight_No',
+      'رقم_رحلة_الوصول',
+      'رقم رحلة الوصول',
+    ]),
+    arrival_time: pickTimeFromRow(row, [
+      'Dep_Arr_Time',
+      'dep_arr_time',
+      'arrival_time',
+      'Arr_Time',
+      'arr_time',
+      'وقت_الوصول',
+      'وقت الوصول',
+    ]),
+    departure_flight_number: pickStr(row, [
+      'Ret_Flight',
+      'ret_flight',
+      'departure_flight_number',
+      'outbound_flight',
+      'رقم_رحلة_المغادرة',
+      'رقم رحلة المغادرة',
+    ]),
   };
 }
 
@@ -285,6 +397,9 @@ export function pilgrimToDbInsert(p: Pilgrim): Record<string, unknown> {
     arrival_airport: emptyToNull(p.arrival_airport),
     last_exit_place: emptyToNull(p.last_exit_place),
     departure_airport: emptyToNull(p.departure_airport),
+    arrival_flight_number: emptyToNull(p.arrival_flight_number),
+    arrival_time: emptyToNull(p.arrival_time),
+    departure_flight_number: emptyToNull(p.departure_flight_number),
   };
 }
 

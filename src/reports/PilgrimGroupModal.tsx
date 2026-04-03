@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
+import { Fragment, useEffect, useMemo } from 'react';
 import type { Pilgrim } from '../core/types';
-import { exportPilgrimsToExcel } from '../core/exportExcel';
+import { exportPilgrimsToExcel, type PilgrimExportScope } from '../core/exportExcel';
 import { AirportBadge, RegionBadge } from '../components/RegionBadge';
 import { cn } from '../lib/cn';
+
+export type PilgrimDetailScope = PilgrimExportScope;
 
 interface PilgrimGroupModalProps {
   open: boolean;
@@ -10,9 +12,155 @@ interface PilgrimGroupModalProps {
   subtitle?: string;
   pilgrims: Pilgrim[];
   onClose: () => void;
+  /** تقرير الوصول: إخفاء رحلة المغادرة. تقرير المغادرة: إخفاء حقول الوصول. */
+  detailScope?: PilgrimDetailScope;
 }
 
-export function PilgrimGroupModal({ open, title, subtitle, pilgrims, onClose }: PilgrimGroupModalProps) {
+type ColKey =
+  | 'id'
+  | 'booking'
+  | 'name'
+  | 'gender'
+  | 'nationality'
+  | 'age'
+  | 'package'
+  | 'arrivalCity'
+  | 'departureCity'
+  | 'arrivalAirport'
+  | 'arrivalFlight'
+  | 'arrivalTime'
+  | 'departureFlight'
+  | 'departureAirport'
+  | 'stop1'
+  | 'guide';
+
+const COL_DEFS: { key: ColKey; label: string; hideFor?: PilgrimExportScope[] }[] = [
+  { key: 'id', label: 'المعرف' },
+  { key: 'booking', label: 'رقم الحجز' },
+  { key: 'name', label: 'الاسم' },
+  { key: 'gender', label: 'الجنس' },
+  { key: 'nationality', label: 'الجنسية' },
+  { key: 'age', label: 'العمر' },
+  { key: 'package', label: 'الباقة' },
+  { key: 'arrivalCity', label: 'مدينة الوصول', hideFor: ['departure_report'] },
+  { key: 'departureCity', label: 'مدينة المغادرة' },
+  { key: 'arrivalAirport', label: 'مطار الوصول', hideFor: ['departure_report'] },
+  { key: 'arrivalFlight', label: 'رقم رحلة الوصول', hideFor: ['departure_report'] },
+  { key: 'arrivalTime', label: 'وقت الوصول', hideFor: ['departure_report'] },
+  { key: 'departureFlight', label: 'رقم رحلة المغادرة', hideFor: ['arrival_report'] },
+  { key: 'departureAirport', label: 'مطار المغادرة' },
+  { key: 'stop1', label: 'التوقف 1' },
+  { key: 'guide', label: 'المرشد' },
+];
+
+function cellForCol(p: Pilgrim, key: ColKey) {
+  switch (key) {
+    case 'id':
+      return <td className="px-2 py-2 tabular-nums text-fg-secondary">{p.id}</td>;
+    case 'booking':
+      return (
+        <td className="max-w-[100px] truncate px-2 py-2 font-mono text-[11px]" dir="ltr" title={p.booking_id}>
+          {p.booking_id || '—'}
+        </td>
+      );
+    case 'name':
+      return (
+        <td className="max-w-[140px] truncate px-2 py-2 font-medium text-fg" title={p.name}>
+          {p.name || '—'}
+        </td>
+      );
+    case 'gender':
+      return <td className="px-2 py-2 text-fg-secondary">{p.gender === 'Male' ? 'ذكر' : 'أنثى'}</td>;
+    case 'nationality':
+      return <td className="px-2 py-2 text-fg-secondary">{p.nationality || '—'}</td>;
+    case 'age':
+      return <td className="px-2 py-2 tabular-nums">{p.age ?? '—'}</td>;
+    case 'package':
+      return (
+        <td className="max-w-[120px] truncate px-2 py-2" title={p.package}>
+          {p.package || '—'}
+        </td>
+      );
+    case 'arrivalCity':
+      return (
+        <td className="px-2 py-2">
+          <RegionBadge label={p.arrival_city || '—'} />
+        </td>
+      );
+    case 'departureCity':
+      return (
+        <td className="px-2 py-2">
+          <RegionBadge label={p.departure_city || '—'} />
+        </td>
+      );
+    case 'arrivalAirport':
+      return (
+        <td className="px-2 py-2">
+          <AirportBadge code={p.arrival_airport} />
+        </td>
+      );
+    case 'arrivalFlight':
+      return (
+        <td
+          className="max-w-[100px] truncate px-2 py-2 font-mono text-[11px] text-fg-secondary tabular-nums"
+          dir="ltr"
+          title={p.arrival_flight_number}
+        >
+          {p.arrival_flight_number?.trim() || '—'}
+        </td>
+      );
+    case 'arrivalTime':
+      return (
+        <td className="max-w-[80px] truncate px-2 py-2 tabular-nums text-fg-secondary" dir="ltr" title={p.arrival_time}>
+          {p.arrival_time?.trim() || '—'}
+        </td>
+      );
+    case 'departureFlight':
+      return (
+        <td
+          className="max-w-[100px] truncate px-2 py-2 font-mono text-[11px] text-fg-secondary tabular-nums"
+          dir="ltr"
+          title={p.departure_flight_number}
+        >
+          {p.departure_flight_number?.trim() || '—'}
+        </td>
+      );
+    case 'departureAirport':
+      return (
+        <td className="px-2 py-2">
+          <AirportBadge code={p.departure_airport} />
+        </td>
+      );
+    case 'stop1':
+      return (
+        <td className="max-w-[120px] truncate px-2 py-2" title={p.first_stop_name}>
+          {p.first_stop_name || '—'}
+        </td>
+      );
+    case 'guide':
+      return (
+        <td className="max-w-[100px] truncate px-2 py-2 text-fg-secondary" title={p.guide_name}>
+          {p.guide_name || '—'}
+        </td>
+      );
+    default:
+      return null;
+  }
+}
+
+export function PilgrimGroupModal({
+  open,
+  title,
+  subtitle,
+  pilgrims,
+  onClose,
+  detailScope = 'full',
+}: PilgrimGroupModalProps) {
+  const columns = useMemo(
+    () => COL_DEFS.filter((c) => !c.hideFor?.includes(detailScope)),
+    [detailScope],
+  );
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -26,7 +174,7 @@ export function PilgrimGroupModal({ open, title, subtitle, pilgrims, onClose }: 
 
   const handleExport = () => {
     if (pilgrims.length === 0) return;
-    exportPilgrimsToExcel(pilgrims);
+    exportPilgrimsToExcel(pilgrims, detailScope);
   };
 
   return (
@@ -80,26 +228,12 @@ export function PilgrimGroupModal({ open, title, subtitle, pilgrims, onClose }: 
               <table className="w-full min-w-[720px] border-collapse text-xs">
                 <thead className="sticky top-0 z-[1] bg-gradient-to-b from-primary to-primary-dark">
                   <tr>
-                    {[
-                      'المعرف',
-                      'رقم الحجز',
-                      'الاسم',
-                      'الجنس',
-                      'الجنسية',
-                      'العمر',
-                      'الباقة',
-                      'مدينة الوصول',
-                      'مدينة المغادرة',
-                      'مطار الوصول',
-                      'مطار المغادرة',
-                      'التوقف 1',
-                      'المرشد',
-                    ].map((h) => (
+                    {columns.map((c) => (
                       <th
-                        key={h}
+                        key={c.key}
                         className="border-none px-2 py-2.5 text-start text-[10px] font-extrabold uppercase tracking-wide text-white whitespace-nowrap"
                       >
-                        {h}
+                        {c.label}
                       </th>
                     ))}
                   </tr>
@@ -107,37 +241,9 @@ export function PilgrimGroupModal({ open, title, subtitle, pilgrims, onClose }: 
                 <tbody>
                   {pilgrims.map((p) => (
                     <tr key={p.id} className="border-b border-gray-100 even:bg-gray-50/80 hover:bg-primary-pale/40">
-                      <td className="px-2 py-2 tabular-nums text-fg-secondary">{p.id}</td>
-                      <td className="max-w-[100px] truncate px-2 py-2 font-mono text-[11px]" dir="ltr" title={p.booking_id}>
-                        {p.booking_id || '—'}
-                      </td>
-                      <td className="max-w-[140px] truncate px-2 py-2 font-medium text-fg" title={p.name}>
-                        {p.name || '—'}
-                      </td>
-                      <td className="px-2 py-2 text-fg-secondary">{p.gender === 'Male' ? 'ذكر' : 'أنثى'}</td>
-                      <td className="px-2 py-2 text-fg-secondary">{p.nationality || '—'}</td>
-                      <td className="px-2 py-2 tabular-nums">{p.age ?? '—'}</td>
-                      <td className="max-w-[120px] truncate px-2 py-2" title={p.package}>
-                        {p.package || '—'}
-                      </td>
-                      <td className="px-2 py-2">
-                        <RegionBadge label={p.arrival_city || '—'} />
-                      </td>
-                      <td className="px-2 py-2">
-                        <RegionBadge label={p.departure_city || '—'} />
-                      </td>
-                      <td className="px-2 py-2">
-                        <AirportBadge code={p.arrival_airport} />
-                      </td>
-                      <td className="px-2 py-2">
-                        <AirportBadge code={p.departure_airport} />
-                      </td>
-                      <td className="max-w-[120px] truncate px-2 py-2" title={p.first_stop_name}>
-                        {p.first_stop_name || '—'}
-                      </td>
-                      <td className="max-w-[100px] truncate px-2 py-2 text-fg-secondary" title={p.guide_name}>
-                        {p.guide_name || '—'}
-                      </td>
+                      {columns.map((c) => (
+                        <Fragment key={c.key}>{cellForCol(p, c.key)}</Fragment>
+                      ))}
                     </tr>
                   ))}
                 </tbody>

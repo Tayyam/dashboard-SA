@@ -22,15 +22,27 @@ const EMPTY_FILTERS: Filters = {
   chart_third_stop: null,
   chart_nationality: null,
   chart_package: null,
+  chart_package_type: null,
   chart_age_bucket: null,
   chart_contract_type: null,
   chart_visa_status: null,
+  chart_holy_city: null,
+  chart_holy_city_date: null,
+  chart_holy_city_date_end: null,
 };
 
 interface FilterStore {
   filters: Filters;
   setSidebarFilter: (key: keyof Filters, value: string | null) => void;
   toggleChartFilter: (key: keyof Filters, value: string) => void;
+  /** تبديل فلتر التواجد: مدينة + بداية النطاق + نهاية النطاق (نفس اليوم إن لم يُدمج) */
+  toggleHolyCityPresenceFilter: (cityLabel: string, rangeStart: string, rangeEnd: string) => void;
+  setHolyCityPresenceFilter: (
+    cityLabel: string | null,
+    rangeStart: string | null,
+    rangeEnd: string | null,
+  ) => void;
+  clearHolyCityPresenceFilter: () => void;
   clearAllFilters: () => void;
 }
 
@@ -50,6 +62,42 @@ export const useFilters = create<FilterStore>((set) => ({
         },
       };
     }),
+
+  toggleHolyCityPresenceFilter: (cityLabel, rangeStart, rangeEnd) =>
+    set((state) => {
+      const same =
+        state.filters.chart_holy_city === cityLabel &&
+        state.filters.chart_holy_city_date === rangeStart &&
+        state.filters.chart_holy_city_date_end === rangeEnd;
+      return {
+        filters: {
+          ...state.filters,
+          chart_holy_city: same ? null : cityLabel,
+          chart_holy_city_date: same ? null : rangeStart,
+          chart_holy_city_date_end: same ? null : rangeEnd,
+        },
+      };
+    }),
+
+  setHolyCityPresenceFilter: (cityLabel, rangeStart, rangeEnd) =>
+    set((state) => ({
+      filters: {
+        ...state.filters,
+        chart_holy_city: cityLabel,
+        chart_holy_city_date: rangeStart,
+        chart_holy_city_date_end: rangeEnd,
+      },
+    })),
+
+  clearHolyCityPresenceFilter: () =>
+    set((state) => ({
+      filters: {
+        ...state.filters,
+        chart_holy_city: null,
+        chart_holy_city_date: null,
+        chart_holy_city_date_end: null,
+      },
+    })),
 
   clearAllFilters: () => set({ filters: { ...EMPTY_FILTERS } }),
 }));

@@ -1,7 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 
-export type AppRole = 'admin' | 'user';
+export type AppRole = 'admin' | 'manager' | 'user';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export interface UserProfileRow {

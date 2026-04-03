@@ -3,6 +3,9 @@ import type { Pilgrim } from '../core/types';
 import { supabase } from '../core/supabaseClient';
 import { pilgrimFromRow } from '../core/pilgrimFromRow';
 
+/** مؤقت: إخفاء سجلات محددة من الواجهة فقط (لا يحذف من قاعدة البيانات). */
+const TEMP_HIDDEN_PILGRIM_IDS = new Set<number>([423776]);
+
 interface PilgrimsDataState {
   data: Pilgrim[];
   loading: boolean;
@@ -32,7 +35,7 @@ async function fetchAllPilgrimsFromView(): Promise<Pilgrim[]> {
     from += pageSize;
   }
 
-  return allRows.map(normalizePilgrim);
+  return allRows.map(normalizePilgrim).filter((p) => !TEMP_HIDDEN_PILGRIM_IDS.has(p.id));
 }
 
 export const usePilgrimsData = create<PilgrimsDataState>((set, get) => ({

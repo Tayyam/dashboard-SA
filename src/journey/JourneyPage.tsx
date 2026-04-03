@@ -4,11 +4,12 @@ import { JourneyFlow } from './JourneyFlow';
 import { PilgrimsTable } from '../dashboard/PilgrimsTable';
 import { useJourneyData } from '../store/useJourneyData';
 import type { JourneyFilters } from '../core/journeyFilterEngine';
+import { HiOutlineMap } from 'react-icons/hi2';
 import { formatJourneyAirportCode } from './journeyDisplay';
 
 const NODE_LABELS: Partial<Record<keyof JourneyFilters, string>> = {
-  node_package: 'الباقة',
   node_arrival_date: 'تاريخ الوصول',
+  node_package: 'الباقة',
   node_arrival_city: 'مطار مدينة الوصول',
   node_first_stop_name: 'التوقف الأول',
   node_first_stop_check_out: 'مغادرة مكان التوقف الأول',
@@ -67,15 +68,7 @@ export function JourneyPage() {
             className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-primary-pale"
             title="مسار الرحلة"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path
-                d="M4 14h5l2.5-2.5 6 1.5 1.5-1.5-4.5-2-1-3.5M12 15l-1.5 3M20 10h-5l-2.5 2.5-6-1.5-1.5 1.5 4.5 2 1 3.5M12 9l1.5-3"
-                stroke="#046A38"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <HiOutlineMap className="h-5 w-5 text-[#046A38]" aria-hidden />
           </span>
           <h2 className="text-base font-bold tracking-tight text-fg">مسار رحلة الحجاج</h2>
           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-fg-muted">Haj Journey Map</span>

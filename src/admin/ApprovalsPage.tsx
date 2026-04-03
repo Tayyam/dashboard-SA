@@ -700,7 +700,7 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
                     </td>
 
                     <td className="max-md:hidden whitespace-nowrap px-4 py-2.5 align-middle text-xs text-gray-500">
-                      {new Date(row.requestedAt).toLocaleDateString('ar-SA', {
+                      {new Date(row.requestedAt).toLocaleDateString('en-US', {
                         day: '2-digit', month: 'short', year: 'numeric',
                       })}
                     </td>

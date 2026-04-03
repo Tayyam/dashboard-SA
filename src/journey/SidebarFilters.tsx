@@ -5,6 +5,7 @@ import { DateRangeSlider } from './DateRangeSlider';
 import type { JourneyFilters } from '../core/journeyFilterEngine';
 import { usePilgrimsData } from '../store/usePilgrimsData';
 import { formatJourneyAirportCode } from './journeyDisplay';
+import { HiBars3BottomLeft } from 'react-icons/hi2';
 import { cn } from '../lib/cn';
 
 function unique(arr: string[]) {
@@ -108,9 +109,7 @@ export function JourneySidebarFilters() {
             title={collapsed ? 'إظهار الفلاتر' : 'إخفاء الفلاتر'}
           >
             {collapsed ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+              <HiBars3BottomLeft className="h-3.5 w-3.5" aria-hidden />
             ) : (
               'إخفاء'
             )}

@@ -222,19 +222,19 @@ export function JourneyFlow() {
 
   const stages: StageDef[] = [
     {
-      title: 'الباقة',
-      field: 'package',
-      filterKey: 'node_package',
-      sideIcon: 'package',
-      data: pagedPackageData,
-    },
-    {
       title: 'تاريخ الوصول',
       field: 'arrival_date',
       filterKey: 'node_arrival_date',
       isDate: true,
       sideIcon: 'calendar',
       data: getStableStageItems('arrival_date', 'node_arrival_date', arrivalDateData, 7, true),
+    },
+    {
+      title: 'الباقة',
+      field: 'package',
+      filterKey: 'node_package',
+      sideIcon: 'package',
+      data: pagedPackageData,
     },
     {
       title: 'مطار مدينة الوصول',

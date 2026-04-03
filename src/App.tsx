@@ -20,8 +20,9 @@ import { ApprovalsPage } from './admin/ApprovalsPage';
 import { supabase } from './core/supabaseClient';
 import { ensureUserAndApproval, type AppRole, type ApprovalStatus } from './core/authAccess';
 import type { Filters } from './core/types';
-import { formatJourneyAirportCode } from './core/airportDisplay';
+import { AirportBadge } from './components/RegionBadge';
 import { cn } from './lib/cn';
+import { HiArrowRightOnRectangle, HiUser } from 'react-icons/hi2';
 
 type Page = 'dashboard' | 'journey' | 'approvals' | 'profile' | 'reports';
 type ProfilePayload = {
@@ -80,11 +81,11 @@ function ActiveFilterBadges() {
           onClick={() => toggle(k, filters[k]!)}
         >
           {labels[k]}:{' '}
-          <strong>
-            {k === 'chart_arrival_city'
-              ? formatJourneyAirportCode(String(filters[k]))
-              : String(filters[k])}
-          </strong>{' '}
+          {k === 'chart_arrival_city' ? (
+            <AirportBadge code={String(filters[k])} />
+          ) : (
+            <strong>{String(filters[k])}</strong>
+          )}{' '}
           x
         </button>
       ))}
@@ -314,7 +315,7 @@ export default function App() {
                     {isReports ? 'تقارير أنواع الباقات والبيانات' : 'تحليلات بيانات الحجاج'}
                   </span>
                   <span className="hidden whitespace-nowrap rounded-full border border-white/30 bg-white/15 px-3 py-1.5 text-xs font-medium text-white md:inline">
-                    {new Date().toLocaleDateString('ar-SA', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
               </div>
@@ -390,15 +391,7 @@ export default function App() {
                 className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/50 bg-white/25 font-bold text-white"
                 aria-label="User avatar"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
-                  <path
-                    d="M4 20c0-4 3.6-7 8-7s8 3 8 7"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <HiUser className="h-4 w-4" aria-hidden />
               </span>
             )}
           </button>
@@ -409,15 +402,7 @@ export default function App() {
             title="تسجيل الخروج"
             aria-label="تسجيل الخروج"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M15 7l5 5-5 5M20 12H9M12 4H6a2 2 0 00-2 2v12a2 2 0 002 2h6"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <HiArrowRightOnRectangle className="h-4 w-4" aria-hidden />
           </button>
           {isDashboard && hasAnyFilter && (
             <button

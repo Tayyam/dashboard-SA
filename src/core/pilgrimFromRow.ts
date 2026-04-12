@@ -4,23 +4,82 @@ export function toText(val: unknown): string {
   return val == null ? '' : String(val).trim();
 }
 
-/** YYYY-MM-DD for charts and filters; accepts ISO strings, Excel serials, M/D/YYYY */
+/**
+ * تحويل رقم تسلسلي لـ Excel (أو نص يحمله) إلى YYYY-MM-DD
+ * باستخدام حساب رياضي بحت — لا يُنشئ كائن Date ولا يعتمد على المنطقة الزمنية.
+ * Algorithm: https://howardhinnant.github.io/date_algorithms.html (civil_from_days)
+ */
+function excelSerialToYMD(serial: number): string {
+  if (!Number.isFinite(serial) || serial < 1) return '';
+  // أيام Unix (منذ 1970-01-01) = serial - 25569
+  // 25569 = عدد أيام Excel من 1900-01-00 حتى 1970-01-01 (مع مراعاة خطأ 1900 كسنة كبيسة في Excel)
+  const unixDays = serial - 25569;
+
+  // خوارزمية civil_from_days: تحويل أيام Unix إلى (سنة، شهر، يوم) بالتقويم الميلادي
+  const z   = unixDays + 719468;
+  const era = Math.floor((z >= 0 ? z : z - 146096) / 146097);
+  const doe = z - era * 146097;
+  const yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365);
+  const y   = yoe + era * 400;
+  const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
+  const mp  = Math.floor((5 * doy + 2) / 153);
+  const d   = doy - Math.floor((153 * mp + 2) / 5) + 1;
+  const mo  = mp < 10 ? mp + 3 : mp - 9;
+  const yr  = mo <= 2 ? y + 1 : y;
+  return `${yr}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+/** YYYY-MM-DD for charts and filters; accepts ISO strings, Excel serials (number or string), Date objects, M/D/YYYY */
 export function toPilgrimDate(val: unknown): string {
   if (val == null || val === '') return '';
+
+  // ISO date string fast path
   if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) return val.slice(0, 10);
-  if (typeof val === 'number' && Number.isFinite(val)) {
-    const ms = Math.round((val - 25569) * 86400_000);
-    return new Date(ms).toISOString().slice(0, 10);
+
+  // Excel serial number (numeric) — حساب رياضي بحت بلا Date
+  if (typeof val === 'number' && Number.isFinite(val) && val > 1) {
+    return excelSerialToYMD(val);
   }
+
+  // Date object — use UTC components to avoid local-timezone shift
+  if (val instanceof Date && !Number.isNaN(val.getTime())) {
+    const y  = val.getUTCFullYear();
+    const mo = String(val.getUTCMonth() + 1).padStart(2, '0');
+    const d  = String(val.getUTCDate()).padStart(2, '0');
+    return `${y}-${mo}-${d}`;
+  }
+
   const s = String(val).trim();
+
+  // نص يحمل رقماً تسلسلياً لـ Excel (مثلاً "46160" مُخزَّن كنص)
+  if (/^\d{5,6}$/.test(s)) {
+    const n = Number(s);
+    if (n > 1000) return excelSerialToYMD(n);
+  }
+
+  // M/D/YYYY
   const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (m) {
     const month = m[1].padStart(2, '0');
-    const day = m[2].padStart(2, '0');
+    const day   = m[2].padStart(2, '0');
     return `${m[3]}-${month}-${day}`;
   }
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+
+  // DD-MM-YYYY
+  const dm = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (dm) {
+    return `${dm[3]}-${dm[2].padStart(2, '0')}-${dm[1].padStart(2, '0')}`;
+  }
+
+  // Generic ISO-like fallback — only for strings that look like dates
+  if (/\d{4}/.test(s)) {
+    const ts = Date.parse(s + (s.includes('T') ? '' : 'T12:00:00Z'));
+    if (!Number.isNaN(ts)) {
+      const tmp = new Date(ts);
+      return `${tmp.getUTCFullYear()}-${String(tmp.getUTCMonth() + 1).padStart(2, '0')}-${String(tmp.getUTCDate()).padStart(2, '0')}`;
+    }
+  }
+
   return s.slice(0, 10);
 }
 

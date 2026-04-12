@@ -19,8 +19,13 @@ import OnboardingPage from './auth/OnboardingPage';
 import ProfilePage from './auth/ProfilePage';
 import { ApprovalsPage } from './admin/ApprovalsPage';
 import { supabase } from './core/supabaseClient';
+import {
+  clearDashboardEmbedSessionFlag,
+  isDashboardEmbedPresentation,
+} from './core/embedPresentation';
 import { ensureUserAndApproval, type AppRole, type ApprovalStatus } from './core/authAccess';
 import type { Filters } from './core/types';
+import { FullScreenLoader } from './components/FullScreenLoader';
 import { AirportBadge } from './components/RegionBadge';
 import { cn } from './lib/cn';
 import { formatPresenceBucketDdMm } from './core/pilgrimDailyPresence';
@@ -120,7 +125,8 @@ function ActiveFilterBadges() {
 }
 
 export default function App() {
-  const [showIntro, setShowIntro] = useState(true);
+  const [isEmbedPresentation] = useState(() => isDashboardEmbedPresentation());
+  const [showIntro, setShowIntro] = useState(() => !isDashboardEmbedPresentation());
   const [page, setPage] = useState<Page>('dashboard');
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -153,12 +159,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (isEmbedPresentation) {
+      setShowIntro(false);
+      return;
+    }
     if (!session || (role !== 'admin' && approvalStatus !== 'approved')) return;
     const timer = window.setTimeout(() => {
       setShowIntro(false);
     }, 3000);
     return () => window.clearTimeout(timer);
-  }, [session, role, approvalStatus]);
+  }, [session, role, approvalStatus, isEmbedPresentation]);
 
   useEffect(() => {
     if (!session) {
@@ -234,10 +244,15 @@ export default function App() {
   const hasAnyFilter = Object.values(filters).some(Boolean);
   const userEmail = session?.user?.email ?? 'user';
   const isAdmin = role === 'admin';
-  const isManager = role === 'manager';
-  const canOpenApprovals = isAdmin || isManager;
+  const canOpenApprovals = isAdmin;
   const isApproved = isAdmin || approvalStatus === 'approved';
   const fetchPilgrimsData = usePilgrimsData((s) => s.fetchData);
+
+  useEffect(() => {
+    if (page === 'approvals' && !isAdmin) {
+      setPage('dashboard');
+    }
+  }, [page, isAdmin]);
 
   useEffect(() => {
     if (!session || !isApproved) return;
@@ -266,17 +281,17 @@ export default function App() {
   };
 
   if (authLoading) {
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-gray-50 p-5">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-white px-10 py-12 text-center text-fg-secondary shadow-xl">
-          جاري تحميل الجلسة...
-        </div>
-      </div>
-    );
+    return <FullScreenLoader variant="loading" />;
   }
 
   if (!session) {
     return <AuthPage />;
+  }
+
+  const accessPending =
+    accessLoading || (role === null && approvalStatus === null);
+  if (accessPending) {
+    return <FullScreenLoader variant="loading" />;
   }
 
   if (needsOnboarding && !accessLoading) {
@@ -288,7 +303,7 @@ export default function App() {
         onFinish={async (payload) => {
           await saveProfile(payload, { markProfileCompleted: true });
           setNeedsOnboarding(false);
-          setShowIntro(true);
+          if (!isEmbedPresentation) setShowIntro(true);
         }}
       />
     );
@@ -298,7 +313,7 @@ export default function App() {
     return <PendingApprovalPage userName={displayName || userEmail} />;
   }
 
-  if (showIntro) {
+  if (showIntro && !isEmbedPresentation) {
     return (
       <div
         className="flex h-screen w-full items-center justify-center animate-[intro-fade_0.45s_ease] bg-[radial-gradient(circle_at_20%_20%,rgba(4,106,56,0.2),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(4,106,56,0.18),transparent_45%),#f1f5f9]"
@@ -400,39 +415,46 @@ export default function App() {
           )}
         </nav>
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            className="inline-flex max-w-[220px] cursor-pointer items-center gap-2 rounded-full border border-white/30 bg-white/15 py-0.5 ps-1 pe-2 transition-all duration-150 ease-out hover:border-white/50 hover:bg-white/25 max-[768px]:p-0.5"
-            title="تعديل الملف الشخصي"
-            onClick={() => setPage('profile')}
-          >
-            <span className="truncate text-xs font-semibold text-white max-[768px]:hidden">
-              {displayName || userEmail}
-            </span>
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={displayName || 'User'}
-                className="h-7 w-7 shrink-0 rounded-full border border-white/50 object-cover"
-              />
-            ) : (
-              <span
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/50 bg-white/25 font-bold text-white"
-                aria-label="User avatar"
+          {!isEmbedPresentation && (
+            <>
+              <button
+                type="button"
+                className="inline-flex max-w-[220px] cursor-pointer items-center gap-2 rounded-full border border-white/30 bg-white/15 py-0.5 ps-1 pe-2 transition-all duration-150 ease-out hover:border-white/50 hover:bg-white/25 max-[768px]:p-0.5"
+                title="تعديل الملف الشخصي"
+                onClick={() => setPage('profile')}
               >
-                <HiUser className="h-4 w-4" aria-hidden />
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-lg border border-white/35 bg-white/15 text-white transition-all duration-150 ease-out hover:border-white/50 hover:bg-white/25"
-            onClick={() => supabase.auth.signOut()}
-            title="تسجيل الخروج"
-            aria-label="تسجيل الخروج"
-          >
-            <HiArrowRightOnRectangle className="h-4 w-4" aria-hidden />
-          </button>
+                <span className="truncate text-xs font-semibold text-white max-[768px]:hidden">
+                  {displayName || userEmail}
+                </span>
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName || 'User'}
+                    className="h-7 w-7 shrink-0 rounded-full border border-white/50 object-cover"
+                  />
+                ) : (
+                  <span
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/50 bg-white/25 font-bold text-white"
+                    aria-label="User avatar"
+                  >
+                    <HiUser className="h-4 w-4" aria-hidden />
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                className="inline-flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-lg border border-white/35 bg-white/15 text-white transition-all duration-150 ease-out hover:border-white/50 hover:bg-white/25"
+                onClick={() => {
+                  clearDashboardEmbedSessionFlag();
+                  void supabase.auth.signOut();
+                }}
+                title="تسجيل الخروج"
+                aria-label="تسجيل الخروج"
+              >
+                <HiArrowRightOnRectangle className="h-4 w-4" aria-hidden />
+              </button>
+            </>
+          )}
           {isDashboard && hasAnyFilter && (
             <button
               type="button"

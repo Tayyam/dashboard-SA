@@ -416,7 +416,10 @@ export function ApprovalsPage({ adminUserId }: ApprovalsPageProps) {
 
     try {
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+      // لا نستخدم cellDates:true لأنه يحوّل الأرقام التسلسلية إلى Date بالتوقيت المحلي
+      // مما يُسبّب انحرافاً في اليوم على أجهزة UTC+ / UTC-.
+      // نتركها أرقاماً خاماً ونحوّلها بصيغة UTC ثابتة في toPilgrimDate.
+      const workbook = XLSX.read(buffer, { type: 'array' });
       const mainSheet = workbook.Sheets.main;
       if (!mainSheet) {
         throw new Error('لم يتم العثور على sheet باسم main داخل ملف الإكسل.');

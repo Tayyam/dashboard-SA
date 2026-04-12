@@ -1,4 +1,5 @@
 import { supabase } from '../core/supabaseClient';
+import { clearDashboardEmbedSessionFlag } from '../core/embedPresentation';
 
 interface PendingApprovalPageProps {
   userName: string;
@@ -40,7 +41,10 @@ export function PendingApprovalPage({ userName }: PendingApprovalPageProps) {
         <button
           type="button"
           className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-[10px] border-[1.5px] border-border-strong bg-transparent px-7 py-3 font-sans text-sm font-semibold text-fg-secondary transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
-          onClick={() => supabase.auth.signOut()}
+          onClick={() => {
+            clearDashboardEmbedSessionFlag();
+            void supabase.auth.signOut();
+          }}
         >
           <svg
             className="h-[18px] w-[18px]"
